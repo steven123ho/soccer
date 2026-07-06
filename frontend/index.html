@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>⚽ Soccer Pickup - FIFA Edition</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <div class="app-container">
+
+        <header class="header">
+
+            <div class="header-content">
+
+                <h1 class="logo">⚽ SOCCER PICKUP</h1>
+
+                <p class="tagline">FIFA Ultimate Team Style</p>
+
+            </div>
+
+        </header>
+
+ 
+
+        <nav class="bottom-nav">
+
+            <button class="nav-btn active" data-page="home">
+
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+
+                </svg>
+
+                <span>Home</span>
+
+            </button>
+
+            <button class="nav-btn" data-page="players">
+
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+
+                </svg>
+
+                <span>Players</span>
+
+            </button>
+
+            <button class="nav-btn" data-page="team-picker">
+
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+
+                </svg>
+
+                <span>Pick Teams</span>
+
+            </button>
+
+            <button class="nav-btn" data-page="polls">
+
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+
+                </svg>
+
+                <span>Polls</span>
+
+            </button>
+
+        </nav>
+
+ 
+
+        <main class="main-content">
+
+            <!-- HOME PAGE -->
+
+            <div id="home" class="page active">
+
+                <div class="welcome-card">
+
+                    <h2>Welcome to FIFA-Style Soccer Pickup!</h2>
+
+                    <p>Organize your games with ultimate team cards</p>
+
+                    <div class="feature-grid">
+
+                        <div class="feature-item">
+
+                            <div class="feature-icon">🎴</div>
+
+                            <h3>FIFA Cards</h3>
+
+                            <p>Beautiful player cards with stats</p>
+
+                        </div>
+
+                        <div class="feature-item">
+
+                            <div class="feature-icon">⚡</div>
+
+                            <h3>Team Picker</h3>
+
+                            <p>Random or captain selection</p>
+
+                        </div>
+
+                        <div class="feature-item">
+
+                            <div class="feature-icon">📊</div>
+
+                            <h3>Voting System</h3>
+
+                            <p>Rate player abilities</p>
+
+                        </div>
+
+                        <div class="feature-item">
+
+                            <div class="feature-icon">🗳️</div>
+
+                            <h3>Polls</h3>
+
+                            <p>Schedule games easily</p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+ 
+
+            <!-- PLAYERS PAGE -->
+
+            <div id="players" class="page">
+
+                <div class="page-header">
+
+                    <h2>My Squad</h2>
+
+                    <button class="btn-primary" onclick="showAddPlayerModal()">
+
+                        <span>+</span> Add Player
+
+                    </button>
+
+                </div>
+
+                <div id="playersGrid" class="fifa-cards-grid"></div>
+
+            </div>
+
+ 
+
+            <!-- TEAM PICKER PAGE -->
+
+            <div id="team-picker" class="page">
+
+                <div class="page-header">
+
+                    <h2>Team Selection</h2>
+
+                </div>
+
+                <div class="selection-card">
+
+                    <h3>Select Players for Game</h3>
+
+                    <div id="playerSelection" class="player-checkboxes"></div>
+
+                    <div class="button-row">
+
+                        <button class="btn-primary" onclick="randomTeams()">🎲 Random Teams</button>
+
+                        <button class="btn-secondary" onclick="captainMode()">👑 Captain Mode</button>
+
+                    </div>
+
+                </div>
+
+                <div id="teamsResult"></div>
+
+            </div>
+
+ 
+
+            <!-- POLLS PAGE -->
+
+            <div id="polls" class="page">
+
+                <div class="page-header">
+
+                    <h2>Polls & Voting</h2>
+
+                    <button class="btn-primary" onclick="showCreatePollModal()">
+
+                        <span>+</span> Create Poll
+
+                    </button>
+
+                </div>
+
+                <div id="pollsList"></div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+ 
+
+    <!-- Add Player Modal -->
+
+    <div id="addPlayerModal" class="modal">
+
+        <div class="modal-overlay" onclick="closeModal('addPlayerModal')"></div>
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2>Add New Player</h2>
+
+                <button class="modal-close" onclick="closeModal('addPlayerModal')">×</button>
+
+            </div>
+
+            <form onsubmit="addPlayer(event)" class="modal-form">
+
+                <div class="form-group">
+
+                    <label>Player Name *</label>
+
+                    <input type="text" id="playerName" required placeholder="Enter player name">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Image URL (optional)</label>
+
+                    <input type="url" id="playerImage" placeholder="https://example.com/photo.jpg">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Primary Position *</label>
+
+                    <select id="primaryPosition" required>
+
+                        <option value="GK">GK - Goalkeeper</option>
+
+                        <option value="CB">CB - Center Back</option>
+
+                        <option value="LB">LB - Left Back</option>
+
+                        <option value="RB">RB - Right Back</option>
+
+                        <option value="CDM">CDM - Defensive Mid</option>
+
+                        <option value="CM" selected>CM - Center Mid</option>
+
+                        <option value="CAM">CAM - Attacking Mid</option>
+
+                        <option value="LW">LW - Left Wing</option>
+
+                        <option value="RW">RW - Right Wing</option>
+
+                        <option value="ST">ST - Striker</option>
+
+                        <option value="CF">CF - Center Forward</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Card Rarity</label>
+
+                    <select id="cardRarity">
+
+                        <option value="bronze">Bronze (60-69)</option>
+
+                        <option value="silver">Silver (70-79)</option>
+
+                        <option value="gold" selected>Gold (80-89)</option>
+
+                        <option value="special">Special (90+)</option>
+
+                    </select>
+
+                </div>
+
+                <div class="button-row">
+
+                    <button type="submit" class="btn-primary">Add Player</button>
+
+                    <button type="button" class="btn-outline" onclick="closeModal('addPlayerModal')">Cancel</button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+ 
+
+    <!-- Vote Modal -->
+
+    <div id="voteModal" class="modal">
+
+        <div class="modal-overlay" onclick="closeModal('voteModal')"></div>
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2>Rate Player Stats</h2>
+
+                <button class="modal-close" onclick="closeModal('voteModal')">×</button>
+
+            </div>
+
+            <div id="votePlayerName" class="vote-player-name"></div>
+
+            <form onsubmit="submitVote(event)" class="modal-form">
+
+                <div class="stat-slider">
+
+                    <label>Pace <span id="votePaceValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="votePace" min="1" max="99" value="50" oninput="updateSlider('votePace')">
+
+                    <div class="stat-bar-bg"><div id="votePaceBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="stat-slider">
+
+                    <label>Shooting <span id="voteShootingValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="voteShooting" min="1" max="99" value="50" oninput="updateSlider('voteShooting')">
+
+                    <div class="stat-bar-bg"><div id="voteShootingBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="stat-slider">
+
+                    <label>Passing <span id="votePassingValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="votePassing" min="1" max="99" value="50" oninput="updateSlider('votePassing')">
+
+                    <div class="stat-bar-bg"><div id="votePassingBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="stat-slider">
+
+                    <label>Dribbling <span id="voteDribblingValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="voteDribbling" min="1" max="99" value="50" oninput="updateSlider('voteDribbling')">
+
+                    <div class="stat-bar-bg"><div id="voteDribblingBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="stat-slider">
+
+                    <label>Defending <span id="voteDefendingValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="voteDefending" min="1" max="99" value="50" oninput="updateSlider('voteDefending')">
+
+                    <div class="stat-bar-bg"><div id="voteDefendingBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="stat-slider">
+
+                    <label>Physical <span id="votePhysicalValue" class="stat-value">50</span></label>
+
+                    <input type="range" id="votePhysical" min="1" max="99" value="50" oninput="updateSlider('votePhysical')">
+
+                    <div class="stat-bar-bg"><div id="votePhysicalBar" class="stat-bar-fill" style="width: 50%"></div></div>
+
+                </div>
+
+                <div class="button-row">
+
+                    <button type="submit" class="btn-primary">Submit Vote</button>
+
+                    <button type="button" class="btn-outline" onclick="closeModal('voteModal')">Cancel</button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+ 
+
+    <!-- Create Poll Modal -->
+
+    <div id="createPollModal" class="modal">
+
+        <div class="modal-overlay" onclick="closeModal('createPollModal')"></div>
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2>Create New Poll</h2>
+
+                <button class="modal-close" onclick="closeModal('createPollModal')">×</button>
+
+            </div>
+
+            <form onsubmit="createPoll(event)" class="modal-form">
+
+                <div class="form-group">
+
+                    <label>Poll Title *</label>
+
+                    <input type="text" id="pollTitle" required placeholder="e.g., When should we play?">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Description (optional)</label>
+
+                    <textarea id="pollDescription" rows="2" placeholder="Add details..."></textarea>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Options (one per line) *</label>
+
+                    <textarea id="pollOptions" rows="5" required placeholder="Saturday 3pm&#10;Sunday 10am&#10;Sunday 2pm"></textarea>
+
+                </div>
+
+                <div class="button-row">
+
+                    <button type="submit" class="btn-primary">Create Poll</button>
+
+                    <button type="button" class="btn-outline" onclick="closeModal('createPollModal')">Cancel</button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+ 
+
+    <!-- Use app-api.js for PostgreSQL backend, or app.js for localStorage -->
+
+    <script src="app-api.js"></script>
+
+</body>
+
+</html>
