@@ -3,18 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --background: 15 23 42;
-  --foreground: 255 255 255;
+  --background: 220 30% 10%;
+  --foreground: 210 40% 98%;
+  --card: 220 30% 12%;
+  --card-foreground: 210 40% 98%;
+  --primary: 142 76% 36%;
+  --primary-dark: 142 76% 26%;
+  --primary-light: 142 76% 46%;
+  --secondary: 142 76% 36%;
+  --secondary-dark: 142 76% 26%;
+  --secondary-light: 142 76% 46%;
+  --muted: 220 30% 15%;
+  --muted-foreground: 215 20% 70%;
+  --accent: 142 76% 36%;
+  --accent-foreground: 210 40% 98%;
+  --border: 220 30% 20%;
+  --input: 220 30% 20%;
+  --ring: 142 76% 36%;
 }
 
 body {
   background: rgb(var(--background));
   color: rgb(var(--foreground));
   min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .card-glow {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+  }
+  
+  .glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
   }
 }

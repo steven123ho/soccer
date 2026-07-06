@@ -139,7 +139,7 @@ export function PollsPage() {
   return (
     <div className="pb-20">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Polls & Voting</h2>
+        <h2 className="text-2xl font-bold text-white">Polls & Voting</h2>
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus size={20} className="mr-2" />
           Create Poll
@@ -149,7 +149,7 @@ export function PollsPage() {
       {polls.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-xl font-semibold mb-2">No Polls Yet</h3>
+          <h3 className="text-xl font-semibold mb-2 text-white">No Polls Yet</h3>
           <p className="text-gray-400">Create your first poll!</p>
         </div>
       ) : (
@@ -159,7 +159,7 @@ export function PollsPage() {
 
             return (
               <div key={poll.id} className="bg-card rounded-xl p-6 border border-gray-600">
-                <h3 className="text-xl font-bold mb-2">{poll.title}</h3>
+                <h3 className="text-xl font-bold mb-2 text-white">{poll.title}</h3>
                 {poll.description && <p className="text-gray-400 mb-4">{poll.description}</p>}
                 <p className="text-sm text-gray-500 mb-4">Total votes: {totalVotes}</p>
 
@@ -211,7 +211,7 @@ export function PollsPage() {
               name="title"
               type="text"
               required
-              className="w-full px-3 py-2 bg-card border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
               placeholder="e.g., When should we play?"
             />
           </div>
@@ -221,7 +221,7 @@ export function PollsPage() {
             <textarea
               name="description"
               rows={2}
-              className="w-full px-3 py-2 bg-card border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
               placeholder="Add details..."
             />
           </div>
@@ -232,7 +232,7 @@ export function PollsPage() {
               name="options"
               rows={5}
               required
-              className="w-full px-3 py-2 bg-card border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
               placeholder="Saturday 3pm&#10;Sunday 10am&#10;Sunday 2pm"
             />
           </div>

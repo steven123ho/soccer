@@ -5,9 +5,13 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
 import { OnboardingModal } from './onboarding-modal'
-import { LogIn, LogOut, User } from 'lucide-react'
+import { LogIn, User } from 'lucide-react'
 
-export function AuthButton() {
+interface AuthButtonProps {
+  onProfileClick: () => void
+}
+
+export function AuthButton({ onProfileClick }: AuthButtonProps) {
   const [user, setUser] = useState<any>(null)
   const [playerProfile, setPlayerProfile] = useState<any>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -41,7 +45,7 @@ export function AuthButton() {
   }
 
   const checkPlayerProfile = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('players')
       .select('*')
       .eq('user_id', userId)
@@ -49,8 +53,8 @@ export function AuthButton() {
     
     setPlayerProfile(data)
     
-    // Show onboarding if no profile exists
-    if (!data && user) {
+    // Show onboarding if no profile exists (error means not found)
+    if (error || !data) {
       setShowOnboarding(true)
     }
   }
@@ -82,23 +86,24 @@ export function AuthButton() {
     }
   }
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
-
   if (user) {
     return (
       <>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 text-sm">
+        <button
+          onClick={onProfileClick}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors text-white"
+        >
+          {playerProfile?.image_url ? (
+            <img
+              src={playerProfile.image_url}
+              alt={playerProfile.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
             <User size={16} />
-            <span className="text-gray-400">{playerProfile?.name || user.email}</span>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut size={16} className="mr-2" />
-            Sign Out
-          </Button>
-        </div>
+          )}
+          <span className="text-sm font-medium">{playerProfile?.name || user.email}</span>
+        </button>
         <OnboardingModal
           isOpen={showOnboarding}
           onClose={() => setShowOnboarding(false)}
@@ -131,7 +136,7 @@ export function AuthButton() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-card border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
               placeholder="you@example.com"
             />
           </div>
@@ -144,7 +149,7 @@ export function AuthButton() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 bg-card border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
               placeholder="••••••••"
             />
           </div>

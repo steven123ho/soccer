@@ -10,22 +10,22 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3b82f6',
-          dark: '#2563eb',
-          light: '#60a5fa',
+          DEFAULT: '#16a34a',
+          dark: '#15803d',
+          light: '#22c55e',
         },
         secondary: {
-          DEFAULT: '#ff006e',
-          dark: '#d6005c',
-          light: '#ff4d94',
+          DEFAULT: '#16a34a',
+          dark: '#15803d',
+          light: '#22c55e',
         },
         background: {
-          DEFAULT: '#0f172a',
-          light: '#1e293b',
+          DEFAULT: '#1f2937',
+          light: '#374151',
         },
         card: {
-          DEFAULT: '#1e293b',
-          light: '#334155',
+          DEFAULT: '#1f2937',
+          light: '#374151',
         },
       },
     },

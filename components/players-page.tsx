@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PlayerWithStats } from '@/lib/types'
 import { PlayerCard } from './player-card'
+import { PlayerDetailModal } from './player-detail-modal'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
 
 export function PlayersPage() {
   const [players, setPlayers] = useState<PlayerWithStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const [showVoteModal, setShowVoteModal] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
   const [voteStats, setVoteStats] = useState({
@@ -98,6 +100,11 @@ export function PlayersPage() {
     }
   }
 
+  const openDetailModal = (player: PlayerWithStats) => {
+    setSelectedPlayer(player)
+    setShowDetailModal(true)
+  }
+
   const openVoteModal = (player: PlayerWithStats) => {
     // Prevent users from voting on themselves
     if (player.id === currentUserPlayerId) {
@@ -128,7 +135,7 @@ export function PlayersPage() {
   return (
     <div className="pb-20">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">My Squad</h2>
+        <h2 className="text-2xl font-bold text-white">My Squad</h2>
       </div>
 
       {players.length === 0 ? (
@@ -138,16 +145,29 @@ export function PlayersPage() {
           <p className="text-gray-400">Sign in and create your player profile to get started!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {players.map((player) => (
             <PlayerCard
               key={player.id}
               player={player}
-              onClick={() => openVoteModal(player)}
+              onClick={() => openDetailModal(player)}
             />
           ))}
         </div>
       )}
+
+      {/* Player Detail Modal */}
+      <PlayerDetailModal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        player={selectedPlayer}
+        onVote={() => {
+          setShowDetailModal(false)
+          openVoteModal(selectedPlayer!)
+        }}
+        currentUserPlayerId={currentUserPlayerId}
+        onColorChange={() => fetchPlayers()}
+      />
 
       {/* Vote Modal */}
       <Modal isOpen={showVoteModal} onClose={() => setShowVoteModal(false)} title="Rate Player Stats">

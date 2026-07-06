@@ -109,35 +109,35 @@ export function TeamPickerPage() {
     const pos = position.toUpperCase()
     if (['ST', 'CF', 'LW', 'RW'].includes(pos)) return 'bg-red-500'
     if (['CAM', 'CM', 'CDM', 'LM', 'RM'].includes(pos)) return 'bg-green-500'
-    if (['CB', 'LB', 'RB'].includes(pos)) return 'bg-blue-500'
+    if (['CB', 'LB', 'RB'].includes(pos)) return 'bg-purple-500'
     if (pos === 'GK') return 'bg-yellow-500'
     return 'bg-gray-500'
   }
 
   return (
     <div className="pb-20 space-y-6">
-      <h2 className="text-2xl font-bold">Team Selection</h2>
+      <h2 className="text-2xl font-bold text-white">Team Selection</h2>
 
-      <div className="bg-card rounded-xl p-6 border border-gray-600">
-        <h3 className="text-lg font-semibold mb-4">Select Players for Game</h3>
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4 text-white">Select Players for Game</h3>
         
         {players.length === 0 ? (
           <p className="text-gray-400">No players available. Add players first!</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {players.map(player => (
-              <label key={player.id} className="flex items-center gap-3 p-2 rounded hover:bg-background cursor-pointer">
+              <label key={player.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selectedPlayers.includes(player.id)}
                   onChange={() => togglePlayer(player.id)}
-                  className="w-4 h-4 accent-primary"
+                  className="w-4 h-4 accent-green-600"
                 />
-                <span className="flex-1">{player.name}</span>
+                <span className="flex-1 text-white">{player.name}</span>
                 <span className={`text-xs px-2 py-1 rounded text-white font-bold ${getPositionColor(player.primary_position)}`}>
                   {player.primary_position}
                 </span>
-                <span className="font-bold text-primary">{getOverallRating(player.stats)}</span>
+                <span className="font-bold text-green-500">{getOverallRating(player.stats)}</span>
               </label>
             ))}
           </div>
@@ -157,37 +157,37 @@ export function TeamPickerPage() {
 
       {teams && (
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl p-6 border-2 border-primary">
-            <h3 className="text-xl font-bold mb-2">Team 1</h3>
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border-2 border-green-600 shadow-sm">
+            <h3 className="text-xl font-bold mb-2 text-white">Team 1</h3>
             <p className="text-sm text-gray-400 mb-4">
               Avg: {Math.round(teams.team1.reduce((sum, p) => sum + getOverallRating(p.stats), 0) / teams.team1.length)}
             </p>
             <div className="space-y-2">
               {teams.team1.map(player => (
-                <div key={player.id} className="flex items-center justify-between p-2 bg-background rounded">
-                  <span className="font-semibold">{player.name}</span>
+                <div key={player.id} className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <span className="font-semibold text-white">{player.name}</span>
                   <span className={`text-xs px-2 py-1 rounded text-white font-bold ${getPositionColor(player.primary_position)}`}>
                     {player.primary_position}
                   </span>
-                  <span className="font-bold text-primary">{getOverallRating(player.stats)}</span>
+                  <span className="font-bold text-green-500">{getOverallRating(player.stats)}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-card rounded-xl p-6 border-2 border-secondary">
-            <h3 className="text-xl font-bold mb-2">Team 2</h3>
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border-2 border-green-700 shadow-sm">
+            <h3 className="text-xl font-bold mb-2 text-white">Team 2</h3>
             <p className="text-sm text-gray-400 mb-4">
               Avg: {Math.round(teams.team2.reduce((sum, p) => sum + getOverallRating(p.stats), 0) / teams.team2.length)}
             </p>
             <div className="space-y-2">
               {teams.team2.map(player => (
-                <div key={player.id} className="flex items-center justify-between p-2 bg-background rounded">
-                  <span className="font-semibold">{player.name}</span>
+                <div key={player.id} className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <span className="font-semibold text-white">{player.name}</span>
                   <span className={`text-xs px-2 py-1 rounded text-white font-bold ${getPositionColor(player.primary_position)}`}>
                     {player.primary_position}
                   </span>
-                  <span className="font-bold text-secondary">{getOverallRating(player.stats)}</span>
+                  <span className="font-bold text-green-500">{getOverallRating(player.stats)}</span>
                 </div>
               ))}
             </div>

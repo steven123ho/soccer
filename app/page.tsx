@@ -5,21 +5,26 @@ import { Navigation } from '@/components/navigation'
 import { HomePage } from '@/components/home-page'
 import { PlayersPage } from '@/components/players-page'
 import { TeamPickerPage } from '@/components/team-picker-page'
+import { TeamBuilder } from '@/components/team-builder'
 import { PollsPage } from '@/components/polls-page'
+import { ProfilePage } from '@/components/profile-page'
 import { AuthButton } from '@/components/auth-button'
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState('home')
+  const [currentPage, setCurrentPage] = useState('players')
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-gray-700 px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <header className="bg-gradient-to-r from-green-600 to-green-700 border-b border-green-800 px-3 sm:px-4 py-3 sm:py-4 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">⚽ SOCCER PICKUP</h1>
-            <p className="text-sm text-gray-400">FIFA Ultimate Team Style</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="text-2xl sm:text-3xl">⚽</div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">ftubsl</h1>
+              <p className="text-[10px] sm:text-xs text-white/90 font-medium">ULTIMATE TEAM</p>
+            </div>
           </div>
-          <AuthButton />
+          <AuthButton onProfileClick={() => setCurrentPage('profile')} />
         </div>
       </header>
 
@@ -27,7 +32,9 @@ export default function Home() {
         {currentPage === 'home' && <HomePage />}
         {currentPage === 'players' && <PlayersPage />}
         {currentPage === 'team-picker' && <TeamPickerPage />}
+        {currentPage === 'team-builder' && <TeamBuilder />}
         {currentPage === 'polls' && <PollsPage />}
+        {currentPage === 'profile' && <ProfilePage />}
       </main>
 
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />

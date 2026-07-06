@@ -13,7 +13,7 @@ export function Button({ className, variant = 'primary', size = 'md', ...props }
         {
           'bg-primary hover:bg-primary-dark text-white': variant === 'primary',
           'bg-secondary hover:bg-secondary-dark text-white': variant === 'secondary',
-          'border-2 border-primary text-primary hover:bg-primary hover:text-white': variant === 'outline',
+          'border-2 border-primary text-white hover:bg-primary': variant === 'outline',
         },
         {
           'h-8 px-3 text-sm': size === 'sm',

@@ -4,8 +4,11 @@ export interface Player {
   name: string
   image_url: string | null
   primary_position: string
+  secondary_positions: string[] | null
   player_number: number | null
+  nationality: string | null
   rarity: string
+  card_color: string | null
   created_at: string
   updated_at: string
 }
