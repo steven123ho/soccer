@@ -25,8 +25,6 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
   })
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
   const imgRef = useRef<HTMLImageElement>(null)
-  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
-  const [processedImage, setProcessedImage] = useState<string | null>(null)
 
   const getCroppedImg = async (image: HTMLImageElement, crop: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas')
@@ -59,7 +57,7 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
         if (blob) {
           resolve(blob)
         }
-      }, 'image/jpeg', 0.95)
+      }, 'image/png')
     })
   }
 
@@ -75,65 +73,6 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
     }
   }
 
-  const handleRemoveBackground = async () => {
-    // Check if running in development or on localhost
-    const isDevelopment = typeof window !== 'undefined' && (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      process.env.NODE_ENV === 'development'
-    )
-    
-    if (isDevelopment) {
-      alert('Background removal is only available in production. Please deploy to Netlify to use this feature.')
-      return
-    }
-
-    setIsRemovingBackground(true)
-    try {
-      const currentImage = processedImage || imageSrc
-      
-      // Convert image to base64
-      const response = await fetch(currentImage)
-      const blob = await response.blob()
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
-      })
-      
-      // Remove the data URL prefix
-      const base64Data = base64.split(',')[1]
-      
-      // Call Netlify function
-      const apiResponse = await fetch('/.netlify/functions/remove-background', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image: base64Data }),
-      })
-      
-      if (!apiResponse.ok) {
-        throw new Error(`HTTP error! status: ${apiResponse.status}`)
-      }
-      
-      const result = await apiResponse.json()
-      
-      if (result.success && result.image) {
-        setProcessedImage(`data:image/png;base64,${result.image}`)
-      } else {
-        console.error('Background removal failed:', result.error)
-        alert('Failed to remove background: ' + (result.error || 'Unknown error'))
-      }
-    } catch (error) {
-      console.error('Error removing background:', error)
-      alert('Error removing background. Please try again.')
-    } finally {
-      setIsRemovingBackground(false)
-    }
-  }
-
-  const currentImage = processedImage || imageSrc
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Crop & Edit Photo">
@@ -150,20 +89,13 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
               <img
                 ref={imgRef}
                 alt="Crop preview"
-                src={currentImage}
+                src={imageSrc}
                 className="max-w-full max-h-96 object-contain"
               />
             </ReactCrop>
           </div>
         </div>
         <div className="flex gap-3 justify-end">
-          <Button
-            variant="outline"
-            onClick={handleRemoveBackground}
-            disabled={isRemovingBackground}
-          >
-            {isRemovingBackground ? 'Removing...' : 'Remove Background'}
-          </Button>
           <Button variant="outline" onClick={() => onSkipCrop(originalFile)}>
             Skip Crop
           </Button>
