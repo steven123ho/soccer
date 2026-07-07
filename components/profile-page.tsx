@@ -19,6 +19,8 @@ export function ProfilePage() {
   const [editCardColor, setEditCardColor] = useState('#f59e0b')
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null)
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null)
+  const [editPhotoOffsetX, setEditPhotoOffsetX] = useState(0)
+  const [editPhotoOffsetY, setEditPhotoOffsetY] = useState(0)
   const [showCropModal, setShowCropModal] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -164,6 +166,8 @@ export function ProfilePage() {
         setEditPlayerNumber(data.player_number?.toString() || '')
         setEditNationality(data.nationality || '')
         setEditCardColor(data.card_color || '#f59e0b')
+        setEditPhotoOffsetX(data.photo_offset_x || 0)
+        setEditPhotoOffsetY(data.photo_offset_y || 0)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -244,6 +248,8 @@ export function ProfilePage() {
           nationality: editNationality || null,
           image_url: imageUrl,
           card_color: editCardColor,
+          photo_offset_x: editPhotoOffsetX,
+          photo_offset_y: editPhotoOffsetY,
         })
         .eq('id', player.id)
 
@@ -479,6 +485,36 @@ export function ProfilePage() {
                   className="hidden"
                 />
               </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-white">Photo Position</label>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Horizontal Offset (X)</label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  value={editPhotoOffsetX}
+                  onChange={(e) => setEditPhotoOffsetX(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-gray-500 text-center">{editPhotoOffsetX}px</div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Vertical Offset (Y)</label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  value={editPhotoOffsetY}
+                  onChange={(e) => setEditPhotoOffsetY(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-gray-500 text-center">{editPhotoOffsetY}px</div>
+              </div>
             </div>
           </div>
 

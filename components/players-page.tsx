@@ -44,18 +44,25 @@ export function PlayersPage() {
 
       if (error) throw error
 
-      const playersWithStats = data?.map((player: any) => ({
-        ...player,
-        stats: player.player_stats || {
-          pace: 50,
-          shooting: 50,
-          passing: 50,
-          dribbling: 50,
-          defending: 50,
-          physical: 50,
-          vote_count: 0,
-        },
-      })) || []
+      console.log('Fetched players data:', data)
+
+      const playersWithStats = data?.map((player: any) => {
+        console.log('Player stats for', player.name, ':', player.player_stats)
+        return {
+          ...player,
+          stats: player.player_stats || {
+            pace: 50,
+            shooting: 50,
+            passing: 50,
+            dribbling: 50,
+            defending: 50,
+            physical: 50,
+            vote_count: 0,
+          },
+        }
+      }) || []
+
+      console.log('Players with stats:', playersWithStats)
 
       setPlayers(playersWithStats)
       
@@ -79,7 +86,9 @@ export function PlayersPage() {
       if (!user) throw new Error('Not authenticated')
       if (!selectedPlayer) throw new Error('No player selected')
 
-      const { error } = await supabase.from('stat_votes').upsert({
+      // Try insert first
+      const { error: insertError } = await supabase.from('stat_votes').insert({
+        id: crypto.randomUUID(),
         voter_id: user.id,
         player_id: selectedPlayer.id,
         pace: voteStats.pace,
@@ -90,13 +99,39 @@ export function PlayersPage() {
         physical: voteStats.physical,
       })
 
-      if (error) throw error
+      // If insert fails due to unique constraint, update instead
+      if (insertError && insertError.code === '23505') {
+        const { error: updateError } = await supabase
+          .from('stat_votes')
+          .update({
+            pace: voteStats.pace,
+            shooting: voteStats.shooting,
+            passing: voteStats.passing,
+            dribbling: voteStats.dribbling,
+            defending: voteStats.defending,
+            physical: voteStats.physical,
+          })
+          .eq('voter_id', user.id)
+          .eq('player_id', selectedPlayer.id)
+
+        if (updateError) {
+          console.error('Update error:', updateError)
+          throw updateError
+        }
+      } else if (insertError) {
+        console.error('Insert error:', insertError)
+        throw insertError
+      }
 
       setShowVoteModal(false)
+      
+      // Wait a moment for the trigger to update stats
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       fetchPlayers()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting vote:', error)
-      alert('Failed to submit vote')
+      alert(`Failed to submit vote: ${error.message}`)
     }
   }
 
@@ -106,12 +141,6 @@ export function PlayersPage() {
   }
 
   const openVoteModal = (player: PlayerWithStats) => {
-    // Prevent users from voting on themselves
-    if (player.id === currentUserPlayerId) {
-      alert('You cannot rate yourself!')
-      return
-    }
-    
     setSelectedPlayer(player)
     setVoteStats({
       pace: player.stats.pace,
@@ -145,7 +174,7 @@ export function PlayersPage() {
           <p className="text-gray-400">Sign in and create your player profile to get started!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {players.map((player) => (
             <PlayerCard
               key={player.id}

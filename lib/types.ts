@@ -9,6 +9,8 @@ export interface Player {
   nationality: string | null
   rarity: string
   card_color: string | null
+  photo_offset_x: number
+  photo_offset_y: number
   created_at: string
   updated_at: string
 }

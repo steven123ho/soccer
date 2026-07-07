@@ -20,7 +20,7 @@ export default function Home() {
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-2xl sm:text-3xl">⚽</div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">ftubsl</h1>
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">Los N1g@hz</h1>
               <p className="text-[10px] sm:text-xs text-white/90 font-medium">ULTIMATE TEAM</p>
             </div>
           </div>

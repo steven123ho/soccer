@@ -53,6 +53,7 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     dribbling: 50,
     defending: 50,
     physical: 50,
+    vote_count: 0,
   }
 
   const overall = Math.round(
@@ -94,6 +95,11 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
               <span>•</span>
               <span className="font-medium">{player.primary_position}</span>
             </div>
+            {stats.vote_count > 0 && (
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                {stats.vote_count} rating{stats.vote_count !== 1 ? 's' : ''}
+              </div>
+            )}
             {player.secondary_positions && player.secondary_positions.length > 0 && (
               <div className="text-xs sm:text-sm text-gray-400 mt-1">
                 Secondary: {player.secondary_positions.join(', ')}
@@ -122,15 +128,9 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
 
           {onVote && (
             <div className="pt-4">
-              {player.id === currentUserPlayerId ? (
-                <div className="text-center text-sm text-gray-400">
-                  You cannot rate your own player
-                </div>
-              ) : (
-                <Button onClick={onVote} className="w-full">
-                  Rate This Player
-                </Button>
-              )}
+              <Button onClick={onVote} className="w-full">
+                Rate This Player
+              </Button>
             </div>
           )}
 

@@ -79,7 +79,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="relative overflow-hidden bg-white hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full"
+      className="relative overflow-hidden bg-black rounded-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full"
       style={{ boxShadow: shadowColors.normal }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = shadowColors.hover
@@ -89,12 +89,15 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
       }}
     >
       {/* Photo background */}
-      <div className="aspect-[2/3] relative">
+      <div className="aspect-[2/3] relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
         {player.image_url ? (
           <img
             src={player.image_url}
             alt={player.name}
             className="w-full h-full object-cover"
+            style={{
+              transform: `translate(${player.photo_offset_x || 0}px, ${player.photo_offset_y || 0}px)`,
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
@@ -103,7 +106,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
         )}
         
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
         
         {/* Overall rating badge */}
         <div className="absolute top-3 left-3">
@@ -120,7 +123,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
         </div>
 
         {/* Player name above stats */}
-        <div className="absolute bottom-28 sm:bottom-28 left-0 right-0 px-3 sm:px-4">
+        <div className="absolute bottom-32 sm:bottom-36 left-0 right-0 px-3 sm:px-4">
           <h3 className="text-base sm:text-lg font-black text-white drop-shadow-lg text-center leading-tight">{player.name}</h3>
         </div>
 

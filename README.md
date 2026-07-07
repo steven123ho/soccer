@@ -111,13 +111,23 @@ soccer/
 │   ├── home-page.tsx     # Home page component
 │   ├── players-page.tsx  # Players page
 │   ├── team-picker-page.tsx # Team picker
-│   └── polls-page.tsx    # Polls page
+│   ├── team-builder.tsx  # Team builder
+│   ├── polls-page.tsx    # Polls page
+│   ├── profile-page.tsx  # Profile page
+│   ├── player-card.tsx   # Player card component
+│   ├── player-detail-modal.tsx  # Player detail modal
+│   └── image-crop-modal.tsx    # Image cropping modal
 ├── lib/                   # Utilities
 │   ├── supabase/         # Supabase client
+│   │   └── client.ts     # Supabase client initialization
 │   ├── types.ts          # TypeScript types
 │   └── utils.ts          # Helper functions
-├── supabase/             # Database schema
-│   └── schema.sql        # SQL migration
+├── supabase/             # Database schema and migrations
+│   ├── schema.sql        # Main database schema
+│   └── migrations/       # Database migrations
+│       ├── allow_self_rating.sql
+│       ├── add_photo_offsets.sql
+│       └── add_nationality.sql
 ├── package.json          # Dependencies
 ├── tsconfig.json         # TypeScript config
 ├── tailwind.config.ts    # Tailwind config
