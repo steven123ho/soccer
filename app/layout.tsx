@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Los N1g@hz Ultimate Team',
   description: 'Organize your soccer games with FIFA-style player cards',
+  appleWebApp: {
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export const viewport: Viewport = {

@@ -23,11 +23,12 @@
 }
 
 html {
-  background: rgb(var(--background));
+  background: #1a1a1a !important;
+  min-height: 100%;
 }
 
 body {
-  background: rgb(var(--background));
+  background: #1a1a1a !important;
   color: rgb(var(--foreground));
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
