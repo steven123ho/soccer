@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '⚽ Soccer Pickup - FIFA Edition',
+  title: 'Los N1g@hz Ultimate Team',
   description: 'Organize your soccer games with FIFA-style player cards',
   themeColor: '#1a1a1a',
 }
