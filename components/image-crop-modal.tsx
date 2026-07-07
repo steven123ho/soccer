@@ -76,8 +76,14 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
   }
 
   const handleRemoveBackground = async () => {
-    // Check if running in development
-    if (process.env.NODE_ENV === 'development') {
+    // Check if running in development or on localhost
+    const isDevelopment = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      process.env.NODE_ENV === 'development'
+    )
+    
+    if (isDevelopment) {
       alert('Background removal is only available in production. Please deploy to Netlify to use this feature.')
       return
     }
@@ -106,6 +112,10 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
         },
         body: JSON.stringify({ image: base64Data }),
       })
+      
+      if (!apiResponse.ok) {
+        throw new Error(`HTTP error! status: ${apiResponse.status}`)
+      }
       
       const result = await apiResponse.json()
       
