@@ -79,7 +79,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full rounded-lg"
+      className="relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full max-w-[160px] sm:max-w-none rounded-lg"
       style={{ 
         boxShadow: shadowColors.normal,
         background: player.card_color ? `linear-gradient(135deg, ${player.card_color}dd, ${player.card_color}88)` : undefined

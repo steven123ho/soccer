@@ -84,8 +84,10 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
 
     setIsRemovingBackground(true)
     try {
+      const currentImage = processedImage || imageSrc
+      
       // Convert image to base64
-      const response = await fetch(imageSrc)
+      const response = await fetch(currentImage)
       const blob = await response.blob()
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader()
@@ -111,9 +113,11 @@ export function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete, onSk
         setProcessedImage(`data:image/png;base64,${result.image}`)
       } else {
         console.error('Background removal failed:', result.error)
+        alert('Failed to remove background: ' + (result.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error removing background:', error)
+      alert('Error removing background. Please try again.')
     } finally {
       setIsRemovingBackground(false)
     }

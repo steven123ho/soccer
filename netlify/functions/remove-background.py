@@ -1,6 +1,5 @@
 import base64
 import io
-from http.server import BaseHTTPRequestHandler
 import json
 import os
 import sys
@@ -9,10 +8,9 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 try:
-    from rembg import remove
-    from PIL import Image
+    from withoutbg import WithoutBG, APIError, WithoutBGError
 except ImportError:
-    # If rembg is not installed, we'll handle this in the function
+    # If withoutbg is not installed, we'll handle this in the function
     pass
 
 
@@ -28,18 +26,28 @@ def handler(event, context):
                 'body': json.dumps({'error': 'No image data provided'})
             }
         
+        # Get API key from environment
+        api_key = os.environ.get('WITHOUTBG_API_KEY')
+        if not api_key:
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': 'WITHOUTBG_API_KEY not configured'})
+            }
+        
         # Decode base64 image
         image_bytes = base64.b64decode(image_data)
         
-        # Open image with PIL
-        input_image = Image.open(io.BytesIO(image_bytes))
+        # Save to temporary file for withoutbg
+        temp_input = io.BytesIO(image_bytes)
+        temp_input.name = 'input.jpg'
         
-        # Remove background using rembg
-        output_image = remove(input_image)
+        # Remove background using withoutbg API
+        model = WithoutBG.api(api_key=api_key)
+        result = model.remove_background(temp_input)
         
-        # Convert to PNG with transparency
+        # Convert result to PNG bytes
         output_bytes = io.BytesIO()
-        output_image.save(output_bytes, format='PNG')
+        result.save(output_bytes, format='PNG')
         output_bytes.seek(0)
         
         # Encode back to base64
@@ -59,6 +67,16 @@ def handler(event, context):
             })
         }
         
+    except APIError as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': f'API error: {str(e)}'})
+        }
+    except WithoutBGError as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': f'Processing error: {str(e)}'})
+        }
     except Exception as e:
         return {
             'statusCode': 500,

@@ -23,6 +23,9 @@ export function PlayersPage() {
     physical: 50,
   })
   const [currentUserPlayerId, setCurrentUserPlayerId] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState('overall')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const supabase = createClient()
 
@@ -153,6 +156,68 @@ export function PlayersPage() {
     setShowVoteModal(true)
   }
 
+  const getPositionCategory = (position: string) => {
+    const pos = position.toUpperCase()
+    if (['GK'].includes(pos)) return 'goalkeeper'
+    if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(pos)) return 'defender'
+    if (['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(pos)) return 'midfielder'
+    if (['ST', 'CF', 'LW', 'RW'].includes(pos)) return 'attacker'
+    return 'midfielder'
+  }
+
+  const sortPlayers = (players: PlayerWithStats[]) => {
+    const sorted = [...players].sort((a, b) => {
+      let comparison = 0
+
+      switch (sortBy) {
+        case 'overall':
+          const overallA = Math.round((a.stats.pace + a.stats.shooting + a.stats.passing + a.stats.dribbling + a.stats.defending + a.stats.physical) / 6)
+          const overallB = Math.round((b.stats.pace + b.stats.shooting + b.stats.passing + b.stats.dribbling + b.stats.defending + b.stats.physical) / 6)
+          comparison = overallA - overallB
+          break
+        case 'pace':
+          comparison = a.stats.pace - b.stats.pace
+          break
+        case 'shooting':
+          comparison = a.stats.shooting - b.stats.shooting
+          break
+        case 'passing':
+          comparison = a.stats.passing - b.stats.passing
+          break
+        case 'dribbling':
+          comparison = a.stats.dribbling - b.stats.dribbling
+          break
+        case 'defending':
+          comparison = a.stats.defending - b.stats.defending
+          break
+        case 'physical':
+          comparison = a.stats.physical - b.stats.physical
+          break
+        case 'name':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'position':
+          const positionOrder = { goalkeeper: 0, defender: 1, midfielder: 2, attacker: 3 }
+          const posA = getPositionCategory(a.primary_position)
+          const posB = getPositionCategory(b.primary_position)
+          comparison = positionOrder[posA as keyof typeof positionOrder] - positionOrder[posB as keyof typeof positionOrder]
+          break
+        default:
+          comparison = 0
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
+
+    return sorted
+  }
+
+  const sortedPlayers = sortPlayers(players)
+
+  const filteredPlayers = sortedPlayers.filter(player =>
+    player.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -167,6 +232,38 @@ export function PlayersPage() {
         <h2 className="text-2xl font-bold text-white">My Squad</h2>
       </div>
 
+      {/* Sort Controls */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        <input
+          type="text"
+          placeholder="Search players..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-green-500 flex-1 min-w-[200px]"
+        />
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-green-500"
+        >
+          <option value="overall">Overall</option>
+          <option value="pace">Pace</option>
+          <option value="shooting">Shooting</option>
+          <option value="passing">Passing</option>
+          <option value="dribbling">Dribbling</option>
+          <option value="defending">Defending</option>
+          <option value="physical">Physical</option>
+          <option value="name">Name</option>
+          <option value="position">Position</option>
+        </select>
+        <button
+          onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+          className="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors"
+        >
+          {sortOrder === 'desc' ? '↓ High to Low' : '↑ Low to High'}
+        </button>
+      </div>
+
       {players.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">⚽</div>
@@ -174,8 +271,8 @@ export function PlayersPage() {
           <p className="text-gray-400">Sign in and create your player profile to get started!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {players.map((player) => (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-6 lg:gap-8">
+          {filteredPlayers.map((player) => (
             <PlayerCard
               key={player.id}
               player={player}
