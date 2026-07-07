@@ -56,6 +56,14 @@ export function TeamPickerPage() {
     )
   }
 
+  const selectAllPlayers = () => {
+    setSelectedPlayers(players.map(p => p.id))
+  }
+
+  const deselectAllPlayers = () => {
+    setSelectedPlayers([])
+  }
+
   const getOverallRating = (stats: any) => {
     return Math.round(
       (stats.pace + stats.shooting + stats.passing + stats.dribbling + stats.defending + stats.physical) / 6
@@ -124,23 +132,33 @@ export function TeamPickerPage() {
         {players.length === 0 ? (
           <p className="text-gray-400">No players available. Add players first!</p>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {players.map(player => (
-              <label key={player.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedPlayers.includes(player.id)}
-                  onChange={() => togglePlayer(player.id)}
-                  className="w-4 h-4 accent-green-600"
-                />
-                <span className="flex-1 text-white">{player.name}</span>
-                <span className={`text-xs px-2 py-1 rounded text-white font-bold ${getPositionColor(player.primary_position)}`}>
-                  {player.primary_position}
-                </span>
-                <span className="font-bold text-green-500">{getOverallRating(player.stats)}</span>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="flex gap-2 mb-3">
+              <Button onClick={selectAllPlayers} variant="outline" size="sm" className="flex-1">
+                Select All
+              </Button>
+              <Button onClick={deselectAllPlayers} variant="outline" size="sm" className="flex-1">
+                Deselect All
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {players.map(player => (
+                <label key={player.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlayers.includes(player.id)}
+                    onChange={() => togglePlayer(player.id)}
+                    className="w-4 h-4 accent-green-600"
+                  />
+                  <span className="flex-1 text-white">{player.name}</span>
+                  <span className={`text-xs px-2 py-1 rounded text-white font-bold ${getPositionColor(player.primary_position)}`}>
+                    {player.primary_position}
+                  </span>
+                  <span className="font-bold text-green-500">{getOverallRating(player.stats)}</span>
+                </label>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="flex gap-2 mt-4">

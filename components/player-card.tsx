@@ -79,8 +79,11 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="relative overflow-hidden bg-black rounded-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full"
-      style={{ boxShadow: shadowColors.normal }}
+      className="relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full rounded-lg"
+      style={{ 
+        boxShadow: shadowColors.normal,
+        background: player.card_color ? `linear-gradient(135deg, ${player.card_color}dd, ${player.card_color}88)` : undefined
+      }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = shadowColors.hover
       }}
@@ -88,8 +91,13 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
         e.currentTarget.style.boxShadow = shadowColors.normal
       }}
     >
+      {/* Card background gradient */}
+      {!player.card_color && (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900" />
+      )}
+      
       {/* Photo background */}
-      <div className="aspect-[2/3] relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
+      <div className="aspect-[2/3] relative overflow-hidden">
         {player.image_url ? (
           <img
             src={player.image_url}
@@ -100,36 +108,38 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
             }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-            <div className="text-6xl text-white/50">⚽</div>
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+            <div className="text-6xl text-white/30">⚽</div>
           </div>
         )}
         
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+        {/* Gradient overlay - FIFA style */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
         
-        {/* Overall rating badge */}
-        <div className="absolute top-3 left-3">
-          <div className="w-14 h-14 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">{overall}</span>
+        {/* Overall rating and position - FIFA style */}
+        <div className="absolute top-2 left-2 flex flex-col items-center">
+          <div className={`w-14 h-14 rounded-full border-3 flex items-center justify-center bg-black/30 backdrop-blur-sm ${
+            overall >= 90 ? 'border-purple-400' :
+            overall >= 80 ? 'border-yellow-400' :
+            overall >= 70 ? 'border-gray-300' :
+            'border-orange-400'
+          }`}>
+            <span className="text-2xl font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{overall}</span>
           </div>
-        </div>
-
-        {/* Position badge */}
-        <div className="absolute top-3 right-3">
-          <div className="px-3 py-1.5 rounded-full border-2 border-white text-white font-bold text-sm drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+          <div className="mt-1 px-2 py-0.5 rounded text-white font-semibold text-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ backgroundColor: player.card_color || '#3b82f6' }}>
             {player.primary_position}
           </div>
         </div>
 
-        {/* Player name above stats */}
-        <div className="absolute bottom-32 sm:bottom-36 left-0 right-0 px-3 sm:px-4">
-          <h3 className="text-base sm:text-lg font-black text-white drop-shadow-lg text-center leading-tight">{player.name}</h3>
+        {/* Player name - FIFA style */}
+        <div className="absolute bottom-[5rem] left-0 right-0 px-3">
+          <h3 className="text-sm sm:text-base font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] text-center tracking-wide uppercase">{player.name}</h3>
         </div>
 
-        {/* Stats */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 sm:p-4">
-          <div className="grid grid-cols-3 gap-2">
+        {/* Stats - Overlay on top of image */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm p-2 sm:p-3">
+          <div className="grid grid-cols-2 gap-y-1 gap-x-1">
             {[
               { label: 'PAC', value: player.stats.pace },
               { label: 'SHO', value: player.stats.shooting },
@@ -137,19 +147,12 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
               { label: 'DRI', value: player.stats.dribbling },
               { label: 'DEF', value: player.stats.defending },
               { label: 'PHY', value: player.stats.physical },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-xs font-semibold text-white/80">{stat.label}</div>
-                <div className="text-lg font-bold text-white">{stat.value}</div>
+            ].map((stat, index) => (
+              <div key={stat.label} className={`text-center ${index % 2 === 0 ? 'border-r border-white/20' : ''}`}>
+                <div className="text-[10px] sm:text-xs font-semibold text-white">{stat.value} <span className="font-medium text-white/70">{stat.label}</span></div>
               </div>
             ))}
           </div>
-          
-          {player.stats.vote_count > 0 && (
-            <div className="text-center mt-2 text-xs text-white/80 font-medium">
-              ⭐ {player.stats.vote_count} {player.stats.vote_count === 1 ? 'vote' : 'votes'}
-            </div>
-          )}
         </div>
       </div>
     </div>

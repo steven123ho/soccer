@@ -1,0 +1,66 @@
+import base64
+import io
+from http.server import BaseHTTPRequestHandler
+import json
+import os
+import sys
+
+# Add the current directory to the Python path for imports
+sys.path.insert(0, os.path.dirname(__file__))
+
+try:
+    from rembg import remove
+    from PIL import Image
+except ImportError:
+    # If rembg is not installed, we'll handle this in the function
+    pass
+
+
+def handler(event, context):
+    try:
+        # Parse the request body
+        body = json.loads(event.get('body', '{}'))
+        image_data = body.get('image')
+        
+        if not image_data:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'No image data provided'})
+            }
+        
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_data)
+        
+        # Open image with PIL
+        input_image = Image.open(io.BytesIO(image_bytes))
+        
+        # Remove background using rembg
+        output_image = remove(input_image)
+        
+        # Convert to PNG with transparency
+        output_bytes = io.BytesIO()
+        output_image.save(output_bytes, format='PNG')
+        output_bytes.seek(0)
+        
+        # Encode back to base64
+        processed_image = base64.b64encode(output_bytes.read()).decode('utf-8')
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            'body': json.dumps({
+                'success': True,
+                'image': processed_image
+            })
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
