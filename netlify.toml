@@ -4,6 +4,8 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    disable_function_handling = true
 
 [functions]
   directory = "netlify/functions"
