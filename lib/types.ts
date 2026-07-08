@@ -91,3 +91,31 @@ export interface PollVote {
 export interface PollWithOptions extends Poll {
   options: (PollOption & { has_voted?: boolean })[]
 }
+
+export interface StatsEntry {
+  id: string
+  player_id: string
+  goals: number
+  assists: number
+  date: string
+  hours_played: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StatsSummary {
+  total_goals: number
+  total_assists: number
+  total_games: number
+  total_hours: number
+  goals_per_game: number
+  assists_per_game: number
+  goals_per_hour: number
+  assists_per_hour: number
+  goals_last_week: number
+  assists_last_week: number
+  goals_last_month: number
+  assists_last_month: number
+  goals_last_year: number
+  assists_last_year: number
+}

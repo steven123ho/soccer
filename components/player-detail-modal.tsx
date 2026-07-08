@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from './ui/modal'
 import { Button } from './ui/button'
-import { PlayerWithStats } from '@/lib/types'
+import { PlayerWithStats, StatsSummary } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
 interface PlayerDetailModalProps {
@@ -19,10 +19,77 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
   const [editingColor, setEditingColor] = useState(false)
   const [newColor, setNewColor] = useState(player?.card_color || '#f59e0b')
   const [saving, setSaving] = useState(false)
+  const [statsSummary, setStatsSummary] = useState<StatsSummary | null>(null)
   
   const supabase = createClient()
   
   const isOwnPlayer = player?.id === currentUserPlayerId
+
+  useEffect(() => {
+    if (player && isOpen) {
+      fetchPlayerStats(player.id)
+    }
+  }, [player, isOpen])
+
+  const fetchPlayerStats = async (playerId: string) => {
+    const { data } = await supabase
+      .from('stats_entries')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('date', { ascending: false })
+
+    if (data && data.length > 0) {
+      const now = new Date()
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+
+      const totalGoals = data.reduce((sum, e) => sum + e.goals, 0)
+      const totalAssists = data.reduce((sum, e) => sum + e.assists, 0)
+      const totalGames = data.length
+      const totalHours = data.reduce((sum, e) => sum + (e.hours_played || 0), 0)
+
+      const goalsLastWeek = data
+        .filter(e => new Date(e.date) >= oneWeekAgo)
+        .reduce((sum, e) => sum + e.goals, 0)
+      const assistsLastWeek = data
+        .filter(e => new Date(e.date) >= oneWeekAgo)
+        .reduce((sum, e) => sum + e.assists, 0)
+
+      const goalsLastMonth = data
+        .filter(e => new Date(e.date) >= oneMonthAgo)
+        .reduce((sum, e) => sum + e.goals, 0)
+      const assistsLastMonth = data
+        .filter(e => new Date(e.date) >= oneMonthAgo)
+        .reduce((sum, e) => sum + e.assists, 0)
+
+      const goalsLastYear = data
+        .filter(e => new Date(e.date) >= oneYearAgo)
+        .reduce((sum, e) => sum + e.goals, 0)
+      const assistsLastYear = data
+        .filter(e => new Date(e.date) >= oneYearAgo)
+        .reduce((sum, e) => sum + e.assists, 0)
+
+      setStatsSummary({
+        total_goals: totalGoals,
+        total_assists: totalAssists,
+        total_games: totalGames,
+        total_hours: totalHours,
+        goals_per_game: totalGames > 0 ? totalGoals / totalGames : 0,
+        assists_per_game: totalGames > 0 ? totalAssists / totalGames : 0,
+        goals_per_hour: totalHours > 0 ? totalGoals / totalHours : 0,
+        assists_per_hour: totalHours > 0 ? totalAssists / totalHours : 0,
+        goals_last_week: goalsLastWeek,
+        assists_last_week: assistsLastWeek,
+        goals_last_month: goalsLastMonth,
+        assists_last_month: assistsLastMonth,
+        goals_last_year: goalsLastYear,
+        assists_last_year: assistsLastYear
+      })
+    } else {
+      setStatsSummary(null)
+    }
+  }
   
   const handleSaveColor = async () => {
     if (!player) return
@@ -125,59 +192,100 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
               </div>
             </div>
           ))}
-
-          {onVote && (
-            <div className="pt-4">
-              <Button onClick={onVote} className="w-full">
-                Rate This Player
-              </Button>
-            </div>
-          )}
-
-          {isOwnPlayer && (
-            <div className="pt-4 border-t border-gray-700">
-              {editingColor ? (
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium">Card Shadow Color</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={newColor}
-                      onChange={(e) => setNewColor(e.target.value)}
-                      className="w-12 h-12 rounded cursor-pointer border-2 border-gray-600"
-                    />
-                    <input
-                      type="text"
-                      value={newColor}
-                      onChange={(e) => setNewColor(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-                      placeholder="#f59e0b"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveColor} className="flex-1" disabled={saving}>
-                      {saving ? 'Saving...' : 'Save Color'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditingColor(false)
-                        setNewColor(player.card_color || '#f59e0b')
-                      }}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button onClick={() => setEditingColor(true)} variant="outline" className="w-full">
-                  Change Card Color
-                </Button>
-              )}
-            </div>
-          )}
         </div>
+
+        {/* Performance Stats */}
+        {statsSummary && (
+          <div className="space-y-3 border-t border-gray-700 pt-4">
+            <h4 className="text-lg font-bold text-white">Performance Stats</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Total Goals</p>
+                <p className="text-xl font-bold text-green-400">{statsSummary.total_goals}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Total Assists</p>
+                <p className="text-xl font-bold text-blue-400">{statsSummary.total_assists}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Games Played</p>
+                <p className="text-xl font-bold text-purple-400">{statsSummary.total_games}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Total Hours</p>
+                <p className="text-xl font-bold text-yellow-400">{statsSummary.total_hours.toFixed(1)}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Goals/Game</p>
+                <p className="text-xl font-bold text-green-400">{statsSummary.goals_per_game.toFixed(2)}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Assists/Game</p>
+                <p className="text-xl font-bold text-blue-400">{statsSummary.assists_per_game.toFixed(2)}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Goals (Week)</p>
+                <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_week}</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-gray-400 text-xs">Assists (Week)</p>
+                <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_week}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {onVote && (
+          <div className="pt-4">
+            <Button onClick={onVote} className="w-full">
+              Rate This Player
+            </Button>
+          </div>
+        )}
+
+        {isOwnPlayer && (
+          <div className="pt-4 border-t border-gray-700">
+            {editingColor ? (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Card Shadow Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={newColor}
+                    onChange={(e) => setNewColor(e.target.value)}
+                    className="w-12 h-12 rounded cursor-pointer border-2 border-gray-600"
+                  />
+                  <input
+                    type="text"
+                    value={newColor}
+                    onChange={(e) => setNewColor(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                    placeholder="#f59e0b"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveColor} className="flex-1" disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Color'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingColor(false)
+                      setNewColor(player.card_color || '#f59e0b')
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button onClick={() => setEditingColor(true)} variant="outline" className="w-full">
+                Change Card Color
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   )

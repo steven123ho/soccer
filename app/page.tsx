@@ -6,7 +6,7 @@ import { HomePage } from '@/components/home-page'
 import { PlayersPage } from '@/components/players-page'
 import { TeamPickerPage } from '@/components/team-picker-page'
 import { TeamBuilder } from '@/components/team-builder'
-import { PollsPage } from '@/components/polls-page'
+import { StatsTrackerPage } from '@/components/stats-tracker-page'
 import { ProfilePage } from '@/components/profile-page'
 import { AuthButton } from '@/components/auth-button'
 
@@ -33,7 +33,7 @@ export default function Home() {
         {currentPage === 'players' && <PlayersPage />}
         {currentPage === 'team-picker' && <TeamPickerPage />}
         {currentPage === 'team-builder' && <TeamBuilder />}
-        {currentPage === 'polls' && <PollsPage />}
+        {currentPage === 'stats' && <StatsTrackerPage onNavigateToProfile={() => setCurrentPage('profile')} />}
         {currentPage === 'profile' && <ProfilePage />}
       </main>
 

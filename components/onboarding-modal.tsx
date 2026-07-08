@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Modal } from './ui/modal'
 import { Button } from './ui/button'
-import { Upload } from 'lucide-react'
+import { Upload, LogOut } from 'lucide-react'
 import { ImageCropModal } from './image-crop-modal'
 
 interface OnboardingModalProps {
@@ -67,6 +67,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
     { code: 'DE', name: 'Germany' },
     { code: 'GH', name: 'Ghana' },
     { code: 'GR', name: 'Greece' },
+    { code: 'GT', name: 'Guatemala' },
     { code: 'HK', name: 'Hong Kong' },
     { code: 'HU', name: 'Hungary' },
     { code: 'IS', name: 'Iceland' },
@@ -130,6 +131,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
     { code: 'GB', name: 'United Kingdom' },
     { code: 'US', name: 'United States' },
     { code: 'UY', name: 'Uruguay' },
+    { code: 'VE', name: 'Venezuela' },
     { code: 'UZ', name: 'Uzbekistan' },
     { code: 'VA', name: 'Vatican City' },
     { code: 'VN', name: 'Vietnam' },
@@ -228,6 +230,10 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
   }
 
   return (
@@ -364,6 +370,16 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
 
         <Button type="submit" className="w-full text-sm sm:text-base" disabled={loading}>
           {loading ? 'Creating Profile...' : 'Create Profile'}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleSignOut}
+          className="w-full text-sm sm:text-base"
+        >
+          <LogOut size={16} className="mr-2" />
+          Sign Out
         </Button>
       </form>
 
