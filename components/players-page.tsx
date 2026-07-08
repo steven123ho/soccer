@@ -392,36 +392,36 @@ export function PlayersPage() {
                           {Math.round((previousVote.pace + previousVote.shooting + previousVote.passing + previousVote.dribbling + previousVote.defending + previousVote.physical) / 6)}
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-0.5 text-center flex-1">
-                        <div className="pr-0.5">
+                      <div className="grid grid-cols-4 gap-0 text-center flex-1">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">PAC</span>
                           <div className="text-sm font-bold text-green-400">{previousVote.pace}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">SHO</span>
                           <div className="text-sm font-bold text-red-400">{previousVote.shooting}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">PAS</span>
                           <div className="text-sm font-bold text-blue-400">{previousVote.passing}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">DRI</span>
                           <div className="text-sm font-bold text-yellow-400">{previousVote.dribbling}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">DEF</span>
                           <div className="text-sm font-bold text-purple-400">{previousVote.defending}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">PHY</span>
                           <div className="text-sm font-bold text-orange-400">{previousVote.physical}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">VIS</span>
                           <div className="text-sm font-bold text-cyan-400">{previousVote.vision}</div>
                         </div>
-                        <div className="pr-0.5">
+                        <div className="pr-0">
                           <span className="text-xs text-gray-400">STA</span>
                           <div className="text-sm font-bold text-teal-400">{previousVote.stamina}</div>
                         </div>

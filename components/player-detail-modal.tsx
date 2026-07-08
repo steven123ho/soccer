@@ -321,7 +321,7 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
         {onVote && (
           <div className="pt-4">
             <Button onClick={onVote} className="w-full">
-              Rate This Player
+            Rate This Player
             </Button>
           </div>
         )}
