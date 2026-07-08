@@ -18,12 +18,17 @@ BEGIN
             dribbling = (SELECT ROUND(AVG(dribbling)) FROM stat_votes WHERE player_id = NEW.player_id),
             defending = (SELECT ROUND(AVG(defending)) FROM stat_votes WHERE player_id = NEW.player_id),
             physical = (SELECT ROUND(AVG(physical)) FROM stat_votes WHERE player_id = NEW.player_id),
+            skill_moves = (SELECT ROUND(AVG(skill_moves)) FROM stat_votes WHERE player_id = NEW.player_id),
+            weak_foot = (SELECT ROUND(AVG(weak_foot)) FROM stat_votes WHERE player_id = NEW.player_id),
+            vision = (SELECT ROUND(AVG(vision)) FROM stat_votes WHERE player_id = NEW.player_id),
+            work_rate = (SELECT ROUND(AVG(work_rate)) FROM stat_votes WHERE player_id = NEW.player_id),
+            stamina = (SELECT ROUND(AVG(stamina)) FROM stat_votes WHERE player_id = NEW.player_id),
             vote_count = (SELECT COUNT(*) FROM stat_votes WHERE player_id = NEW.player_id),
             updated_at = NOW()
         WHERE player_id = NEW.player_id;
     ELSE
         -- Create new player_stats entry
-        INSERT INTO player_stats (player_id, pace, shooting, passing, dribbling, defending, physical, vote_count)
+        INSERT INTO player_stats (player_id, pace, shooting, passing, dribbling, defending, physical, skill_moves, weak_foot, vision, work_rate, stamina, vote_count)
         VALUES (
             NEW.player_id,
             NEW.pace,
@@ -32,6 +37,11 @@ BEGIN
             NEW.dribbling,
             NEW.defending,
             NEW.physical,
+            NEW.skill_moves,
+            NEW.weak_foot,
+            NEW.vision,
+            NEW.work_rate,
+            NEW.stamina,
             1
         );
     END IF;

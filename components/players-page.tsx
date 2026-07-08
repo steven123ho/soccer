@@ -14,6 +14,8 @@ export function PlayersPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showVoteModal, setShowVoteModal] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
+  const [previousVote, setPreviousVote] = useState<any>(null)
+  const [showPreviousRating, setShowPreviousRating] = useState(false)
   const [voteStats, setVoteStats] = useState({
     pace: 50,
     shooting: 50,
@@ -21,6 +23,11 @@ export function PlayersPage() {
     dribbling: 50,
     defending: 50,
     physical: 50,
+    skill_moves: 3,
+    weak_foot: 3,
+    vision: 50,
+    work_rate: 50,
+    stamina: 50,
   })
   const [currentUserPlayerId, setCurrentUserPlayerId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('overall')
@@ -60,6 +67,11 @@ export function PlayersPage() {
             dribbling: 50,
             defending: 50,
             physical: 50,
+            skill_moves: 1,
+            weak_foot: 1,
+            vision: 50,
+            work_rate: 50,
+            stamina: 50,
             vote_count: 0,
           },
         }
@@ -100,6 +112,11 @@ export function PlayersPage() {
         dribbling: voteStats.dribbling,
         defending: voteStats.defending,
         physical: voteStats.physical,
+        skill_moves: voteStats.skill_moves,
+        weak_foot: voteStats.weak_foot,
+        vision: voteStats.vision,
+        work_rate: voteStats.work_rate,
+        stamina: voteStats.stamina,
       })
 
       // If insert fails due to unique constraint, update instead
@@ -113,6 +130,11 @@ export function PlayersPage() {
             dribbling: voteStats.dribbling,
             defending: voteStats.defending,
             physical: voteStats.physical,
+            skill_moves: voteStats.skill_moves,
+            weak_foot: voteStats.weak_foot,
+            vision: voteStats.vision,
+            work_rate: voteStats.work_rate,
+            stamina: voteStats.stamina,
           })
           .eq('voter_id', user.id)
           .eq('player_id', selectedPlayer.id)
@@ -143,15 +165,34 @@ export function PlayersPage() {
     setShowDetailModal(true)
   }
 
-  const openVoteModal = (player: PlayerWithStats) => {
+  const openVoteModal = async (player: PlayerWithStats) => {
     setSelectedPlayer(player)
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    let previousVoteData = null
+    if (user) {
+      const { data } = await supabase
+        .from('stat_votes')
+        .select('*')
+        .eq('voter_id', user.id)
+        .eq('player_id', player.id)
+        .single()
+      previousVoteData = data
+    }
+    
+    setPreviousVote(previousVoteData)
     setVoteStats({
-      pace: player.stats.pace,
-      shooting: player.stats.shooting,
-      passing: player.stats.passing,
-      dribbling: player.stats.dribbling,
-      defending: player.stats.defending,
-      physical: player.stats.physical,
+      pace: previousVoteData?.pace ?? 50,
+      shooting: previousVoteData?.shooting ?? 50,
+      passing: previousVoteData?.passing ?? 50,
+      dribbling: previousVoteData?.dribbling ?? 50,
+      defending: previousVoteData?.defending ?? 50,
+      physical: previousVoteData?.physical ?? 50,
+      skill_moves: previousVoteData?.skill_moves ?? 3,
+      weak_foot: previousVoteData?.weak_foot ?? 3,
+      vision: previousVoteData?.vision ?? 50,
+      work_rate: previousVoteData?.work_rate ?? 50,
+      stamina: previousVoteData?.stamina ?? 50,
     })
     setShowVoteModal(true)
   }
@@ -163,6 +204,12 @@ export function PlayersPage() {
     if (['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(pos)) return 'midfielder'
     if (['ST', 'CF', 'LW', 'RW'].includes(pos)) return 'attacker'
     return 'midfielder'
+  }
+
+  const getWorkRateLabel = (value: number) => {
+    if (value <= 33) return 'Low'
+    if (value <= 66) return 'Medium'
+    return 'High'
   }
 
   const sortPlayers = (players: PlayerWithStats[]) => {
@@ -192,6 +239,21 @@ export function PlayersPage() {
           break
         case 'physical':
           comparison = a.stats.physical - b.stats.physical
+          break
+        case 'vision':
+          comparison = a.stats.vision - b.stats.vision
+          break
+        case 'work_rate':
+          comparison = a.stats.work_rate - b.stats.work_rate
+          break
+        case 'stamina':
+          comparison = a.stats.stamina - b.stats.stamina
+          break
+        case 'skill_moves':
+          comparison = a.stats.skill_moves - b.stats.skill_moves
+          break
+        case 'weak_foot':
+          comparison = a.stats.weak_foot - b.stats.weak_foot
           break
         case 'name':
           comparison = a.name.localeCompare(b.name)
@@ -253,6 +315,11 @@ export function PlayersPage() {
           <option value="dribbling">Dribbling</option>
           <option value="defending">Defending</option>
           <option value="physical">Physical</option>
+          <option value="vision">Vision</option>
+          <option value="work_rate">Work Rate</option>
+          <option value="stamina">Stamina</option>
+          <option value="skill_moves">Skill Moves</option>
+          <option value="weak_foot">Weak Foot</option>
           <option value="name">Name</option>
           <option value="position">Position</option>
         </select>
@@ -296,29 +363,144 @@ export function PlayersPage() {
       />
 
       {/* Vote Modal */}
-      <Modal isOpen={showVoteModal} onClose={() => setShowVoteModal(false)} title="Rate Player Stats">
+      <Modal isOpen={showVoteModal} onClose={() => setShowVoteModal(false)} title="">
         {selectedPlayer && (
           <form onSubmit={handleVote} className="space-y-4">
-            <div className="text-center mb-4">
-              <div className="text-lg font-semibold">Rating {selectedPlayer.name}</div>
+            <div className="text-center mb-2">
+              <div className="text-lg font-semibold text-white">Rate Player: {selectedPlayer.name}</div>
             </div>
 
-            {(['pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical'] as const).map((stat) => (
-              <div key={stat}>
-                <div className="flex justify-between mb-1">
-                  <label className="text-sm font-medium capitalize">{stat}</label>
-                  <span className="text-sm font-bold">{voteStats[stat]}</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="99"
-                  value={voteStats[stat]}
-                  onChange={(e) => setVoteStats({ ...voteStats, [stat]: parseInt(e.target.value) })}
-                  className="w-full accent-primary"
-                />
+            {/* Your Previous Rating Display - Collapsible */}
+            {previousVote && (
+              <div className="border-t border-gray-700 pt-3 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPreviousRating(!showPreviousRating)}
+                  className="w-full flex items-center justify-between mb-2"
+                >
+                  <h4 className="text-sm font-semibold text-white">Your Previous Rating</h4>
+                  <span className={`text-gray-400 transition-transform duration-200 ${showPreviousRating ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+                {showPreviousRating && (
+                  <div className="bg-gray-800/30 rounded-lg p-3 mb-3">
+                    <div className="flex items-center">
+                      <div className="text-center px-4">
+                        <span className="text-xs text-gray-400">OVR</span>
+                        <div className="text-4xl font-bold text-white">
+                          {Math.round((previousVote.pace + previousVote.shooting + previousVote.passing + previousVote.dribbling + previousVote.defending + previousVote.physical) / 6)}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-0.5 text-center flex-1">
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">PAC</span>
+                          <div className="text-sm font-bold text-green-400">{previousVote.pace}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">SHO</span>
+                          <div className="text-sm font-bold text-red-400">{previousVote.shooting}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">PAS</span>
+                          <div className="text-sm font-bold text-blue-400">{previousVote.passing}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">DRI</span>
+                          <div className="text-sm font-bold text-yellow-400">{previousVote.dribbling}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">DEF</span>
+                          <div className="text-sm font-bold text-purple-400">{previousVote.defending}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">PHY</span>
+                          <div className="text-sm font-bold text-orange-400">{previousVote.physical}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">VIS</span>
+                          <div className="text-sm font-bold text-cyan-400">{previousVote.vision}</div>
+                        </div>
+                        <div className="pr-0.5">
+                          <span className="text-xs text-gray-400">STA</span>
+                          <div className="text-sm font-bold text-teal-400">{previousVote.stamina}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
+            )}
+
+            {([
+              { key: 'pace', label: 'Pace' },
+              { key: 'shooting', label: 'Shooting' },
+              { key: 'passing', label: 'Passing' },
+              { key: 'dribbling', label: 'Dribbling' },
+              { key: 'defending', label: 'Defending' },
+              { key: 'physical', label: 'Physical' },
+              { key: 'vision', label: 'Vision' },
+              { key: 'work_rate', label: 'Work Rate' },
+              { key: 'stamina', label: 'Stamina' },
+            ] as const).map((stat) => {
+              const delta = previousVote ? voteStats[stat.key] - previousVote[stat.key] : 0
+              const showDelta = previousVote && delta !== 0
+              return (
+                <div key={stat.key}>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-sm font-medium capitalize text-white">{stat.label}</label>
+                    <span className="text-sm font-bold flex items-center gap-1 text-white">
+                      {voteStats[stat.key]}
+                      {showDelta && (
+                        <span className={delta > 0 ? 'text-green-400' : 'text-red-400'}>
+                          {delta > 0 ? '↑' : '↓'}{Math.abs(delta)}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="99"
+                    value={voteStats[stat.key]}
+                    onChange={(e) => setVoteStats({ ...voteStats, [stat.key]: parseInt(e.target.value) })}
+                    className="w-full accent-primary"
+                  />
+                </div>
+              )
+            })}
+
+            <div className="grid grid-cols-2 gap-4">
+              {([
+                { key: 'skill_moves' as const, label: 'Skill Moves', color: 'text-yellow-400' },
+                { key: 'weak_foot' as const, label: 'Weak Foot', color: 'text-yellow-400' },
+              ]).map((stat) => (
+                <div key={stat.key}>
+                  <label className="text-sm font-medium block mb-2 text-center text-white">{stat.label}</label>
+                  <div className="flex justify-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const currentValue = voteStats[stat.key]
+                      const filled = star <= Math.floor(currentValue)
+                      const half = !filled && star === Math.ceil(currentValue) && currentValue % 1 >= 0.5
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setVoteStats({ ...voteStats, [stat.key]: star })}
+                          onDoubleClick={() => setVoteStats({ ...voteStats, [stat.key]: star - 0.5 })}
+                          className={`text-3xl transition-colors duration-150 ${
+                            filled || half ? stat.color : 'text-gray-600'
+                          } hover:scale-110 hover:opacity-80`}
+                          title={`${star} star${star > 1 ? 's' : ''}${star > 1 ? ' (double-click for half)' : ''}`}
+                        >
+                          {filled ? '★' : half ? '★' : '☆'}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <div className="flex gap-2 pt-4">
               <Button type="submit" className="flex-1">Submit Vote</Button>

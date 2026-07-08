@@ -38,6 +38,11 @@ export function TeamPickerPage() {
           dribbling: 50,
           defending: 50,
           physical: 50,
+          skill_moves: 1,
+          weak_foot: 1,
+          vision: 50,
+          work_rate: 50,
+          stamina: 50,
           vote_count: 0,
         },
       })) || []

@@ -20,16 +20,20 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
   const [newColor, setNewColor] = useState(player?.card_color || '#f59e0b')
   const [saving, setSaving] = useState(false)
   const [statsSummary, setStatsSummary] = useState<StatsSummary | null>(null)
+  const [extraStatsOpen, setExtraStatsOpen] = useState(false)
   
   const supabase = createClient()
   
   const isOwnPlayer = player?.id === currentUserPlayerId
 
   useEffect(() => {
-    if (player && isOpen) {
-      fetchPlayerStats(player.id)
+    if (isOpen) {
+      setExtraStatsOpen(false)
+      if (player) {
+        fetchPlayerStats(player.id)
+      }
     }
-  }, [player, isOpen])
+  }, [player?.id, isOpen])
 
   const fetchPlayerStats = async (playerId: string) => {
     const { data } = await supabase
@@ -120,6 +124,11 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     dribbling: 50,
     defending: 50,
     physical: 50,
+    skill_moves: 1,
+    weak_foot: 1,
+    vision: 50,
+    work_rate: 50,
+    stamina: 50,
     vote_count: 0,
   }
 
@@ -127,7 +136,7 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     (stats.pace + stats.shooting + stats.passing + stats.dribbling + stats.defending + stats.physical) / 6
   )
 
-  const statBars = [
+  const mainStatBars = [
     { label: 'PAC', value: stats.pace, color: 'bg-green-500', textColor: 'text-green-500' },
     { label: 'SHO', value: stats.shooting, color: 'bg-red-500', textColor: 'text-red-500' },
     { label: 'PAS', value: stats.passing, color: 'bg-blue-500', textColor: 'text-blue-500' },
@@ -136,49 +145,92 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     { label: 'PHY', value: stats.physical, color: 'bg-orange-500', textColor: 'text-orange-500' },
   ]
 
+  const extraStatBars = [
+    { label: 'Vision', value: stats.vision, max: 99, color: 'bg-cyan-500', textColor: 'text-cyan-500' },
+    { label: 'Work Rate', value: stats.work_rate, max: 99, color: 'bg-pink-500', textColor: 'text-pink-500' },
+    { label: 'Stamina', value: stats.stamina, max: 99, color: 'bg-teal-500', textColor: 'text-teal-500' },
+  ]
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
+    <Modal isOpen={isOpen} onClose={onClose} title="" accentColor={player.card_color || undefined}>
       <div className="flex flex-col gap-6">
-        {/* Photo and basic info */}
-        <div className="flex flex-col items-center">
-          <div className="relative">
+        {/* Photo and basic info - side by side */}
+        <div className="flex flex-row items-start gap-4">
+          <div className="relative flex-shrink-0">
             {player.image_url ? (
               <img
                 src={player.image_url}
                 alt={player.name}
-                className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-2xl border-4 border-green-600"
+                className="w-36 h-36 sm:w-40 sm:h-40 object-cover rounded-2xl"
+                style={{ border: `4px solid ${player.card_color || '#16a34a'}` }}
               />
             ) : (
-              <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-2xl bg-gray-700 flex items-center justify-center text-5xl sm:text-6xl border-4 border-green-600">
+              <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-2xl bg-gray-700 flex items-center justify-center text-5xl sm:text-6xl"
+                   style={{ border: `4px solid ${player.card_color || '#16a34a'}` }}>
                 ⚽
               </div>
             )}
           </div>
           
-          <div className="mt-4 sm:mt-6 text-center">
-            <h3 className="text-xl sm:text-2xl font-bold text-white">{player.name}</h3>
-            <div className="flex items-center justify-center gap-2 text-gray-400 mt-2">
-              <span className="text-base sm:text-lg font-bold text-green-500">#{player.player_number || '?'}</span>
-              <span>•</span>
-              <span className="font-medium">{player.primary_position}</span>
+          <div className="flex flex-col justify-center pt-1 sm:pt-2 text-left">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg sm:text-2xl font-bold text-white">{player.name}</h3>
+              {player.nationality && (
+                <img
+                  src={`https://flagcdn.com/24x18/${player.nationality.toLowerCase()}.png`}
+                  alt={player.nationality}
+                  className="w-5 h-3.5 sm:w-6 sm:h-4 object-cover rounded-sm"
+                />
+              )}
             </div>
-            {stats.vote_count > 0 && (
-              <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                {stats.vote_count} rating{stats.vote_count !== 1 ? 's' : ''}
+            <div className="flex flex-wrap items-center text-gray-400 mt-1">
+              <span className="text-base sm:text-lg font-bold text-green-500">#{player.player_number || '?'}</span>
+              <span className="text-gray-500 mx-1">|</span>
+              <span className="font-medium text-white">{player.primary_position}</span>
+              {player.secondary_positions && player.secondary_positions.filter(p => p !== player.primary_position).length > 0 && (
+                <>
+                  <span className="text-gray-500 mx-1">/</span>
+                  <span className="text-gray-400">{player.secondary_positions.filter(p => p !== player.primary_position).join(' / ')}</span>
+                </>
+              )}
+            </div>
+            <div className="flex flex-col gap-1 mt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-300 w-20">Skill Moves</span>
+                <span className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className={`text-xl ${star <= Math.floor(Number(stats.skill_moves)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
+                  ))}
+                </span>
               </div>
-            )}
-            {player.secondary_positions && player.secondary_positions.length > 0 && (
-              <div className="text-xs sm:text-sm text-gray-400 mt-1">
-                Secondary: {player.secondary_positions.join(', ')}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-300 w-20">Weak Foot</span>
+                <span className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className={`text-xl ${star <= Math.floor(Number(stats.weak_foot)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
+                  ))}
+                </span>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Stats visualization */}
         <div className="space-y-3 sm:space-y-4">
-          <h4 className="text-lg font-bold mb-4 text-white">Player Stats</h4>
-          {statBars.map((stat) => (
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-lg font-bold text-white">Core Stats</h4>
+              <p className="text-xs text-gray-400">These stats determine the overall rating.</p>
+            </div>
+            <div className="text-right">
+              {stats.vote_count > 0 && (
+                <div className="text-xs sm:text-sm text-gray-500">
+                  {stats.vote_count} rating{stats.vote_count !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          </div>
+          {mainStatBars.map((stat) => (
             <div key={stat.label}>
               <div className="flex justify-between mb-1">
                 <span className={`font-bold text-sm ${stat.textColor}`}>{stat.label}</span>
@@ -192,6 +244,37 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
               </div>
             </div>
           ))}
+
+          <div className="border-t border-gray-700 pt-4 mt-4">
+            <button
+              onClick={() => setExtraStatsOpen(!extraStatsOpen)}
+              className="w-full flex items-center justify-between mb-2"
+            >
+              <h4 className="text-lg font-bold text-white">Extra Stats</h4>
+              <span className={`text-gray-400 transition-transform duration-200 ${extraStatsOpen ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+            <p className="text-xs text-gray-400 mb-4">These do not affect the overall rating.</p>
+            {extraStatsOpen && extraStatBars.map((stat) => {
+              const max = stat.max || 99
+              const displayValue = Number(stat.value)
+              return (
+                <div key={stat.label} className="mb-3 last:mb-0">
+                  <div className="flex justify-between mb-1">
+                    <span className={`font-bold text-sm ${stat.textColor}`}>{stat.label}</span>
+                    <span className={`font-bold text-sm ${stat.textColor}`}>{stat.value}</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-3">
+                    <div
+                      className={`${stat.color} h-3 rounded-full transition-all duration-500`}
+                      style={{ width: `${(displayValue / max) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* Performance Stats */}

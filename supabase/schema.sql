@@ -26,6 +26,11 @@ CREATE TABLE player_stats (
     dribbling INTEGER DEFAULT 50 CHECK (dribbling >= 1 AND dribbling <= 99),
     defending INTEGER DEFAULT 50 CHECK (defending >= 1 AND defending <= 99),
     physical INTEGER DEFAULT 50 CHECK (physical >= 1 AND physical <= 99),
+    skill_moves NUMERIC(3,1) DEFAULT 1 CHECK (skill_moves >= 1 AND skill_moves <= 5),
+    weak_foot NUMERIC(3,1) DEFAULT 1 CHECK (weak_foot >= 1 AND weak_foot <= 5),
+    vision INTEGER DEFAULT 50 CHECK (vision >= 1 AND vision <= 99),
+    work_rate INTEGER DEFAULT 50 CHECK (work_rate >= 1 AND work_rate <= 99),
+    stamina INTEGER DEFAULT 50 CHECK (stamina >= 1 AND stamina <= 99),
     vote_count INTEGER DEFAULT 0,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -41,6 +46,11 @@ CREATE TABLE stat_votes (
     dribbling INTEGER NOT NULL CHECK (dribbling >= 1 AND dribbling <= 99),
     defending INTEGER NOT NULL CHECK (defending >= 1 AND defending <= 99),
     physical INTEGER NOT NULL CHECK (physical >= 1 AND physical <= 99),
+    skill_moves NUMERIC(3,1) NOT NULL CHECK (skill_moves >= 1 AND skill_moves <= 5),
+    weak_foot NUMERIC(3,1) NOT NULL CHECK (weak_foot >= 1 AND weak_foot <= 5),
+    vision INTEGER NOT NULL CHECK (vision >= 1 AND vision <= 99),
+    work_rate INTEGER NOT NULL CHECK (work_rate >= 1 AND work_rate <= 99),
+    stamina INTEGER NOT NULL CHECK (stamina >= 1 AND stamina <= 99),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(voter_id, player_id)
@@ -114,6 +124,11 @@ BEGIN
         dribbling = ROUND(AVG(sv.dribbling)),
         defending = ROUND(AVG(sv.defending)),
         physical = ROUND(AVG(sv.physical)),
+        skill_moves = ROUND(AVG(sv.skill_moves)),
+        weak_foot = ROUND(AVG(sv.weak_foot)),
+        vision = ROUND(AVG(sv.vision)),
+        work_rate = ROUND(AVG(sv.work_rate)),
+        stamina = ROUND(AVG(sv.stamina)),
         vote_count = (SELECT COUNT(*) FROM stat_votes WHERE player_id = NEW.player_id),
         updated_at = NOW()
     WHERE player_id = NEW.player_id;

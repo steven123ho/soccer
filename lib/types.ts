@@ -23,6 +23,11 @@ export interface PlayerStats {
   dribbling: number
   defending: number
   physical: number
+  skill_moves: number
+  weak_foot: number
+  vision: number
+  work_rate: number
+  stamina: number
   vote_count: number
   updated_at: string
 }
@@ -41,6 +46,11 @@ export interface StatVote {
   dribbling: number
   defending: number
   physical: number
+  skill_moves: number
+  weak_foot: number
+  vision: number
+  work_rate: number
+  stamina: number
   created_at: string
   updated_at: string
 }
