@@ -249,6 +249,11 @@ export function ProfilePage() {
     }
   }
 
+  const getNationalityName = (code: string) => {
+    const country = COUNTRIES.find(c => c.code === code);
+    return country ? country.name : code;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -400,10 +405,23 @@ export function ProfilePage() {
               <label className="text-sm text-gray-400">Jersey Number</label>
               <div className="text-lg font-medium text-white">{player.player_number || 'Not set'}</div>
             </div>
-            <div>
-              <label className="text-sm text-gray-400">Nationality</label>
-              <div className="text-lg font-medium text-white">{player.nationality || 'Not set'}</div>
-            </div>
+              <div>
+                <label className="text-sm text-gray-400">Nationality</label>
+                <div className="flex items-center gap-2 text-lg font-medium text-white">
+                  {player.nationality ? (
+                    <>
+                      <img
+                        src={`https://flagcdn.com/24x18/${player.nationality.toLowerCase()}.png`}
+                        alt={player.nationality}
+                        className="w-5 h-3.5 sm:w-6 sm:h-4 object-cover rounded-sm"
+                      />
+                      <span>{getNationalityName(player.nationality)}</span>
+                    </>
+                  ) : (
+                    'Not set'
+                  )}
+                </div>
+              </div>
             <div>
               <label className="text-sm text-gray-400">Position</label>
               <div className="text-lg font-medium text-white">{player.primary_position}</div>
