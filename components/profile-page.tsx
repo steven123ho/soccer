@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
-import { Upload, LogOut } from 'lucide-react'
+import { Upload, LogOut, Newspaper } from 'lucide-react'
 import { ImageCropModal } from './image-crop-modal'
 
 export function ProfilePage() {
   const [player, setPlayer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showNews, setShowNews] = useState(false)
+  const [newsItems, setNewsItems] = useState<any[]>([])
+  const [newsLoading, setNewsLoading] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPosition, setEditPosition] = useState('CM')
   const [editSecondaryPositions, setEditSecondaryPositions] = useState<string[]>([])
@@ -149,6 +152,25 @@ export function ProfilePage() {
     fetchProfile()
   }, [])
 
+  useEffect(() => {
+    if (showNews) {
+      fetchNews()
+    }
+  }, [showNews])
+
+  const fetchNews = async () => {
+    setNewsLoading(true)
+    try {
+      const response = await fetch('/news.json')
+      const data = await response.json()
+      setNewsItems(data)
+    } catch (error) {
+      console.error('Error fetching news:', error)
+    } finally {
+      setNewsLoading(false)
+    }
+  }
+
   const fetchProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -272,6 +294,53 @@ export function ProfilePage() {
     await supabase.auth.signOut()
   }
 
+  const NewsContent = () => {
+    if (newsLoading) {
+      return (
+        <div className="flex items-center justify-center h-32">
+          <div className="text-gray-400">Loading news...</div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-4">
+          {newsItems.map((item) => (
+            <div key={item.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="text-lg font-bold text-white">{item.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-400">{item.date}</span>
+                    {item.version && (
+                      <>
+                        <span className="text-gray-600">•</span>
+                        <span className="text-xs text-green-400 font-medium">{item.version}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-300 text-sm leading-relaxed">{item.content}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 
+          To add a new news item, edit public/news.json:
+          {
+            "id": "unique-id",
+            "date": "YYYY-MM-DD",
+            "title": "Your Title",
+            "content": "Your content here...",
+            "version": "v1.x" // optional
+          }
+        */}
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -352,6 +421,14 @@ export function ProfilePage() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => setShowNews(true)}
+              className="w-full"
+            >
+              <Newspaper size={16} className="mr-2" />
+              News & Updates
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleSignOut}
               className="w-full"
             >
@@ -361,6 +438,10 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <Modal isOpen={showNews} onClose={() => setShowNews(false)} title="News & Updates">
+        <NewsContent />
+      </Modal>
 
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Profile">
         <form onSubmit={handleSave} className="space-y-4">

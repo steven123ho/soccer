@@ -4,9 +4,10 @@ import { cn } from '@/lib/utils'
 interface PlayerCardProps {
   player: PlayerWithStats
   onClick?: () => void
+  motmBoost?: number
 }
 
-export function PlayerCard({ player, onClick }: PlayerCardProps) {
+export function PlayerCard({ player, onClick, motmBoost = 0 }: PlayerCardProps) {
   const overall = Math.round(
     (player.stats.pace +
       player.stats.shooting +
@@ -14,7 +15,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
       player.stats.dribbling +
       player.stats.defending +
       player.stats.physical) / 6
-  )
+  ) + motmBoost
 
   const getRarityFromRating = (rating: number) => {
     if (rating >= 90) return 'special'
@@ -76,25 +77,66 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
     return 'bg-gray-500'
   }
 
+  const isLightColor = (hexColor: string) => {
+    // Convert hex to RGB
+    const hex = hexColor.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return luminance > 0.5
+  }
+
   return (
     <div 
       onClick={onClick}
-      className="relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer group w-full max-w-[160px] sm:max-w-none rounded-lg"
+      className={`relative overflow-hidden transition-all duration-300 cursor-pointer group w-full max-w-[160px] sm:max-w-none rounded-lg ${
+        motmBoost > 0 ? 'p-[3px] animate-float' : `border-4 ${player.card_color ? '' : 'border-gray-700'} hover:scale-105 hover:-translate-y-2`
+      }`}
       style={{ 
-        boxShadow: shadowColors.normal,
-        background: player.card_color ? `linear-gradient(135deg, ${player.card_color}dd, ${player.card_color}88)` : undefined
+        background: motmBoost > 0 ? 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)' : undefined,
+        borderColor: motmBoost === 0 ? (player.card_color || undefined) : undefined,
+        boxShadow: motmBoost > 0 
+          ? `0 0 20px 5px ${player.card_color ? `${player.card_color}80` : 'rgba(239, 68, 68, 0.5)'}, 0 0 30px 10px ${player.card_color ? `${player.card_color}60` : 'rgba(249, 115, 22, 0.3)'}, 0 0 40px 15px ${player.card_color ? `${player.card_color}40` : 'rgba(234, 179, 8, 0.2)'}`
+          : 'none'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = shadowColors.hover
+        e.currentTarget.style.boxShadow = motmBoost > 0
+          ? `0 0 25px 8px ${player.card_color ? `${player.card_color}99` : 'rgba(239, 68, 68, 0.6)'}, 0 0 35px 12px ${player.card_color ? `${player.card_color}80` : 'rgba(249, 115, 22, 0.4)'}, 0 0 45px 18px ${player.card_color ? `${player.card_color}60` : 'rgba(234, 179, 8, 0.3)'}`
+          : '0 10px 30px rgba(0,0,0,0.3)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = shadowColors.normal
+        e.currentTarget.style.boxShadow = motmBoost > 0
+          ? `0 0 20px 5px ${player.card_color ? `${player.card_color}80` : 'rgba(239, 68, 68, 0.5)'}, 0 0 30px 10px ${player.card_color ? `${player.card_color}60` : 'rgba(249, 115, 22, 0.3)'}, 0 0 40px 15px ${player.card_color ? `${player.card_color}40` : 'rgba(234, 179, 8, 0.2)'}`
+          : 'none'
       }}
     >
-      {/* Card background gradient */}
-      {!player.card_color && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900" />
-      )}
+      {/* Inner card wrapper */}
+      <div 
+        className="w-full h-full rounded-lg relative overflow-hidden"
+        style={{
+          background: player.card_color ? `linear-gradient(135deg, ${player.card_color}dd, ${player.card_color}88)` : 'linear-gradient(135deg, #1f2937, #111827)'
+        }}
+      >
+        {/* MOTM shine effect - Design 2 */}
+        {motmBoost > 0 && (
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent animate-pulse pointer-events-none z-5" />
+        )}
+        
+        {/* MOTM badge - Design 2 */}
+        {motmBoost > 0 && (
+          <div 
+            className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold shadow-lg z-10"
+            style={{
+              background: 'linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6)',
+              color: '#ffffff'
+            }}
+          >
+            MOTM
+          </div>
+        )}
       
       {/* Photo background */}
       <div className="aspect-[2/3] relative overflow-hidden">
@@ -117,20 +159,39 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
         
-        {/* Overall rating and position - FIFA style */}
+        {/* Overall rating - FIFA style */}
         <div className="absolute top-2 left-2 flex flex-col items-center">
-          <div className={`w-14 h-14 rounded-full border-3 flex items-center justify-center bg-black/30 backdrop-blur-sm ${
-            overall >= 90 ? 'border-purple-400' :
-            overall >= 80 ? 'border-yellow-400' :
-            overall >= 70 ? 'border-gray-300' :
-            'border-orange-400'
-          }`}>
-            <span className="text-2xl font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{overall}</span>
-          </div>
-          <div className="mt-1 px-2 py-0.5 rounded text-white font-semibold text-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ backgroundColor: player.card_color || '#3b82f6' }}>
-            {player.primary_position}
+          <div 
+            className={`w-14 h-14 rounded-full border-4 flex items-center justify-center backdrop-blur-sm ${
+              motmBoost > 0 ? 'bg-black/40' : 'bg-black/30'
+            }`}
+            style={{
+              borderColor: motmBoost > 0 ? 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)' : (player.card_color || '#3b82f6')
+            }}
+          >
+            <span 
+              className="text-2xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+              style={{
+                color: '#ffffff'
+              }}
+            >
+              {overall}
+            </span>
           </div>
         </div>
+
+        {/* Position - Top right */}
+        {motmBoost === 0 && (
+          <div 
+            className="absolute top-2 right-2 px-2 py-0.5 rounded font-semibold text-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+            style={{ 
+              backgroundColor: player.card_color || '#3b82f6',
+              color: isLightColor(player.card_color || '#3b82f6') ? '#000000' : '#ffffff'
+            }}
+          >
+            {player.primary_position}
+          </div>
+        )}
 
         {/* Player name - FIFA style */}
         <div className="absolute bottom-[5rem] left-0 right-0 px-3">
@@ -154,6 +215,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

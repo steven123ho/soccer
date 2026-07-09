@@ -20,6 +20,7 @@ export function AuthButton({ onProfileClick }: AuthButtonProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
 
   const supabase = createClient()
 
@@ -86,6 +87,22 @@ export function AuthButton({ onProfileClick }: AuthButtonProps) {
     }
   }
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email)
+      if (error) throw error
+      alert('Check your email for the password reset link!')
+      setShowResetPassword(false)
+    } catch (error: any) {
+      alert(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (user) {
     return (
       <>
@@ -125,10 +142,13 @@ export function AuthButton({ onProfileClick }: AuthButtonProps) {
 
       <Modal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        title={isSignUp ? 'Create Account' : 'Sign In'}
+        onClose={() => {
+          setShowAuthModal(false)
+          setShowResetPassword(false)
+        }}
+        title={showResetPassword ? 'Reset Password' : (isSignUp ? 'Create Account' : 'Sign In')}
       >
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={showResetPassword ? handleResetPassword : handleAuth} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Email</label>
             <input
@@ -141,30 +161,53 @@ export function AuthButton({ onProfileClick }: AuthButtonProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-              placeholder="••••••••"
-            />
-          </div>
+          {!showResetPassword && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                placeholder="••••••••"
+              />
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            {loading ? 'Loading...' : showResetPassword ? 'Send Reset Link' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </Button>
 
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="w-full text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </button>
+          {!showResetPassword && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="w-full text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(true)}
+                className="w-full text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Forgot password?
+              </button>
+            </>
+          )}
+
+          {showResetPassword && (
+            <button
+              type="button"
+              onClick={() => setShowResetPassword(false)}
+              className="w-full text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Back to sign in
+            </button>
+          )}
         </form>
       </Modal>
     </>

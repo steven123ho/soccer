@@ -1,17 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import { HomePage } from '@/components/home-page'
 import { PlayersPage } from '@/components/players-page'
-import { TeamPickerPage } from '@/components/team-picker-page'
+import { PlayPage } from '@/components/play-page'
 import { TeamBuilder } from '@/components/team-builder'
 import { StatsTrackerPage } from '@/components/stats-tracker-page'
 import { ProfilePage } from '@/components/profile-page'
 import { AuthButton } from '@/components/auth-button'
+import { MOTMCardPreview } from '@/components/motm-card-preview'
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState('players')
+  const searchParams = useSearchParams()
+  const playerParam = searchParams.get('player')
+
+  useEffect(() => {
+    if (playerParam) {
+      setCurrentPage('players')
+    }
+  }, [playerParam])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -30,11 +40,12 @@ export default function Home() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         {currentPage === 'home' && <HomePage />}
-        {currentPage === 'players' && <PlayersPage />}
-        {currentPage === 'team-picker' && <TeamPickerPage />}
+        {currentPage === 'players' && <PlayersPage initialPlayerId={playerParam || undefined} />}
+        {currentPage === 'team-picker' && <PlayPage />}
         {currentPage === 'team-builder' && <TeamBuilder />}
         {currentPage === 'stats' && <StatsTrackerPage onNavigateToProfile={() => setCurrentPage('profile')} />}
         {currentPage === 'profile' && <ProfilePage />}
+        {currentPage === 'motm-preview' && <MOTMCardPreview />}
       </main>
 
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />

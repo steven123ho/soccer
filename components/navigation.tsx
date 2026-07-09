@@ -11,7 +11,7 @@ interface NavigationProps {
 const navItems = [
   { id: 'players', label: 'Players', icon: Users },
   { id: 'team-builder', label: 'Builder', icon: PlusCircle },
-  { id: 'team-picker', label: 'Pick Teams', icon: Shuffle },
+  { id: 'team-picker', label: 'Play', icon: Shuffle },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
 ]

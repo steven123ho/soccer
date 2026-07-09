@@ -7,15 +7,17 @@ import { PlayerCard } from './player-card'
 import { PlayerDetailModal } from './player-detail-modal'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
+import { SegmentedBar } from './ui/segmented-bar'
 
-export function PlayersPage() {
+export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
   const [players, setPlayers] = useState<PlayerWithStats[]>([])
+  const [motmBoosts, setMotmBoosts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showVoteModal, setShowVoteModal] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
   const [previousVote, setPreviousVote] = useState<any>(null)
-  const [showPreviousRating, setShowPreviousRating] = useState(false)
+  const [showPreviousRating, setShowPreviousRating] = useState(true)
   const [voteStats, setVoteStats] = useState({
     pace: 50,
     shooting: 50,
@@ -26,8 +28,10 @@ export function PlayersPage() {
     skill_moves: 3,
     weak_foot: 3,
     vision: 50,
-    work_rate: 50,
+    work_rate: 2,
     stamina: 50,
+    touch: 50,
+    mindset: 2,
   })
   const [currentUserPlayerId, setCurrentUserPlayerId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('overall')
@@ -36,9 +40,40 @@ export function PlayersPage() {
 
   const supabase = createClient()
 
+  const fetchMotmBoosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('motm_boosts')
+        .select('player_id, boost_amount')
+        .gt('expires_at', new Date().toISOString())
+
+      if (error) throw error
+
+      // Aggregate boosts by player
+      const boostsMap: Record<string, number> = {}
+      data?.forEach(boost => {
+        boostsMap[boost.player_id] = (boostsMap[boost.player_id] || 0) + boost.boost_amount
+      })
+
+      setMotmBoosts(boostsMap)
+    } catch (error) {
+      console.error('Error fetching MOTM boosts:', error)
+    }
+  }
+
   useEffect(() => {
     fetchPlayers()
   }, [])
+
+  useEffect(() => {
+    if (initialPlayerId && players.length > 0) {
+      const player = players.find(p => p.id === initialPlayerId)
+      if (player) {
+        setSelectedPlayer(player)
+        setShowDetailModal(true)
+      }
+    }
+  }, [initialPlayerId, players])
 
   const fetchPlayers = async () => {
     try {
@@ -72,6 +107,8 @@ export function PlayersPage() {
             vision: 50,
             work_rate: 50,
             stamina: 50,
+            touch: 50,
+            mindset: 2,
             vote_count: 0,
           },
         }
@@ -80,6 +117,9 @@ export function PlayersPage() {
       console.log('Players with stats:', playersWithStats)
 
       setPlayers(playersWithStats)
+      
+      // Fetch MOTM boosts
+      await fetchMotmBoosts()
       
       // Set current user's player ID
       if (user) {
@@ -101,22 +141,41 @@ export function PlayersPage() {
       if (!user) throw new Error('Not authenticated')
       if (!selectedPlayer) throw new Error('No player selected')
 
+      // Validate all stats are within valid ranges and ensure integers
+      const validatedVoteStats = {
+        pace: Number(Math.max(1, Math.min(99, voteStats.pace || 50))),
+        shooting: Number(Math.max(1, Math.min(99, voteStats.shooting || 50))),
+        passing: Number(Math.max(1, Math.min(99, voteStats.passing || 50))),
+        dribbling: Number(Math.max(1, Math.min(99, voteStats.dribbling || 50))),
+        defending: Number(Math.max(1, Math.min(99, voteStats.defending || 50))),
+        physical: Number(Math.max(1, Math.min(99, voteStats.physical || 50))),
+        skill_moves: Number(Math.max(1, Math.min(5, voteStats.skill_moves || 3))),
+        weak_foot: Number(Math.max(1, Math.min(5, voteStats.weak_foot || 3))),
+        vision: Number(Math.max(1, Math.min(99, voteStats.vision || 50))),
+        work_rate: Number(Math.max(1, Math.min(4, voteStats.work_rate || 2))),
+        stamina: Number(Math.max(1, Math.min(99, voteStats.stamina || 50))),
+        touch: Number(Math.max(1, Math.min(99, voteStats.touch || 50))),
+        mindset: Number(Math.max(1, Math.min(3, voteStats.mindset || 2))),
+      }
+
       // Try insert first
       const { error: insertError } = await supabase.from('stat_votes').insert({
         id: crypto.randomUUID(),
         voter_id: user.id,
         player_id: selectedPlayer.id,
-        pace: voteStats.pace,
-        shooting: voteStats.shooting,
-        passing: voteStats.passing,
-        dribbling: voteStats.dribbling,
-        defending: voteStats.defending,
-        physical: voteStats.physical,
-        skill_moves: voteStats.skill_moves,
-        weak_foot: voteStats.weak_foot,
-        vision: voteStats.vision,
-        work_rate: voteStats.work_rate,
-        stamina: voteStats.stamina,
+        pace: validatedVoteStats.pace,
+        shooting: validatedVoteStats.shooting,
+        passing: validatedVoteStats.passing,
+        dribbling: validatedVoteStats.dribbling,
+        defending: validatedVoteStats.defending,
+        physical: validatedVoteStats.physical,
+        skill_moves: validatedVoteStats.skill_moves,
+        weak_foot: validatedVoteStats.weak_foot,
+        vision: validatedVoteStats.vision,
+        work_rate: validatedVoteStats.work_rate,
+        stamina: validatedVoteStats.stamina,
+        touch: validatedVoteStats.touch,
+        mindset: validatedVoteStats.mindset,
       })
 
       // If insert fails due to unique constraint, update instead
@@ -124,17 +183,19 @@ export function PlayersPage() {
         const { error: updateError } = await supabase
           .from('stat_votes')
           .update({
-            pace: voteStats.pace,
-            shooting: voteStats.shooting,
-            passing: voteStats.passing,
-            dribbling: voteStats.dribbling,
-            defending: voteStats.defending,
-            physical: voteStats.physical,
-            skill_moves: voteStats.skill_moves,
-            weak_foot: voteStats.weak_foot,
-            vision: voteStats.vision,
-            work_rate: voteStats.work_rate,
-            stamina: voteStats.stamina,
+            pace: validatedVoteStats.pace,
+            shooting: validatedVoteStats.shooting,
+            passing: validatedVoteStats.passing,
+            dribbling: validatedVoteStats.dribbling,
+            defending: validatedVoteStats.defending,
+            physical: validatedVoteStats.physical,
+            skill_moves: validatedVoteStats.skill_moves,
+            weak_foot: validatedVoteStats.weak_foot,
+            vision: validatedVoteStats.vision,
+            work_rate: validatedVoteStats.work_rate,
+            stamina: validatedVoteStats.stamina,
+            touch: validatedVoteStats.touch,
+            mindset: validatedVoteStats.mindset,
           })
           .eq('voter_id', user.id)
           .eq('player_id', selectedPlayer.id)
@@ -150,7 +211,62 @@ export function PlayersPage() {
 
       setShowVoteModal(false)
       
-      // Wait a moment for the trigger to update stats
+      // Use RPC function to calculate and update player stats based on all votes
+      const { error: rpcError } = await supabase.rpc('update_single_player_stats', { player_id_param: selectedPlayer.id })
+      
+      if (rpcError) {
+        console.error('RPC error:', rpcError)
+        // Fallback: manually calculate average if RPC fails
+        const { data: votes } = await supabase
+          .from('stat_votes')
+          .select('*')
+          .eq('player_id', selectedPlayer.id)
+        
+        if (votes && votes.length > 0) {
+          const avgStats = votes.reduce((acc: any, vote: any) => ({
+            pace: acc.pace + vote.pace,
+            shooting: acc.shooting + vote.shooting,
+            passing: acc.passing + vote.passing,
+            dribbling: acc.dribbling + vote.dribbling,
+            defending: acc.defending + vote.defending,
+            physical: acc.physical + vote.physical,
+            skill_moves: acc.skill_moves + vote.skill_moves,
+            weak_foot: acc.weak_foot + vote.weak_foot,
+            vision: acc.vision + vote.vision,
+            work_rate: acc.work_rate + vote.work_rate,
+            stamina: acc.stamina + vote.stamina,
+            touch: acc.touch + vote.touch,
+            mindset: acc.mindset + vote.mindset,
+          }), {
+            pace: 0, shooting: 0, passing: 0, dribbling: 0, defending: 0, physical: 0,
+            skill_moves: 0, weak_foot: 0, vision: 0, work_rate: 0, stamina: 0, touch: 0, mindset: 0
+          })
+          
+          const count = votes.length
+          await supabase
+            .from('player_stats')
+            .upsert({
+              player_id: selectedPlayer.id,
+              pace: Math.round(avgStats.pace / count),
+              shooting: Math.round(avgStats.shooting / count),
+              passing: Math.round(avgStats.passing / count),
+              dribbling: Math.round(avgStats.dribbling / count),
+              defending: Math.round(avgStats.defending / count),
+              physical: Math.round(avgStats.physical / count),
+              skill_moves: Math.round((avgStats.skill_moves / count) * 10) / 10,
+              weak_foot: Math.round((avgStats.weak_foot / count) * 10) / 10,
+              vision: Math.round(avgStats.vision / count),
+              work_rate: Math.round(avgStats.work_rate / count),
+              stamina: Math.round(avgStats.stamina / count),
+              touch: Math.round(avgStats.touch / count),
+              mindset: Math.round(avgStats.mindset / count),
+              vote_count: count,
+              updated_at: new Date().toISOString(),
+            })
+        }
+      }
+      
+      // Wait a moment for the database to update
       await new Promise(resolve => setTimeout(resolve, 500))
       
       fetchPlayers()
@@ -191,8 +307,10 @@ export function PlayersPage() {
       skill_moves: previousVoteData?.skill_moves ?? 3,
       weak_foot: previousVoteData?.weak_foot ?? 3,
       vision: previousVoteData?.vision ?? 50,
-      work_rate: previousVoteData?.work_rate ?? 50,
+      work_rate: previousVoteData?.work_rate ?? 2,
       stamina: previousVoteData?.stamina ?? 50,
+      touch: previousVoteData?.touch ?? 50,
+      mindset: previousVoteData?.mindset ?? 2,
     })
     setShowVoteModal(true)
   }
@@ -344,6 +462,7 @@ export function PlayersPage() {
               key={player.id}
               player={player}
               onClick={() => openDetailModal(player)}
+              motmBoost={motmBoosts[player.id] || 0}
             />
           ))}
         </div>
@@ -406,8 +525,8 @@ export function PlayersPage() {
                           <div className="text-sm font-bold text-blue-400">{previousVote.passing}</div>
                         </div>
                         <div className="pr-0">
-                          <span className="text-xs text-gray-400">DRI</span>
-                          <div className="text-sm font-bold text-yellow-400">{previousVote.dribbling}</div>
+                          <span className="text-xs text-gray-400">VIS</span>
+                          <div className="text-sm font-bold text-yellow-400">{previousVote.vision}</div>
                         </div>
                         <div className="pr-0">
                           <span className="text-xs text-gray-400">DEF</span>
@@ -418,8 +537,8 @@ export function PlayersPage() {
                           <div className="text-sm font-bold text-orange-400">{previousVote.physical}</div>
                         </div>
                         <div className="pr-0">
-                          <span className="text-xs text-gray-400">VIS</span>
-                          <div className="text-sm font-bold text-cyan-400">{previousVote.vision}</div>
+                          <span className="text-xs text-gray-400">DRI</span>
+                          <div className="text-sm font-bold text-cyan-400">{previousVote.dribbling}</div>
                         </div>
                         <div className="pr-0">
                           <span className="text-xs text-gray-400">STA</span>
@@ -440,8 +559,8 @@ export function PlayersPage() {
               { key: 'defending', label: 'Defending' },
               { key: 'physical', label: 'Physical' },
               { key: 'vision', label: 'Vision' },
-              { key: 'work_rate', label: 'Work Rate' },
               { key: 'stamina', label: 'Stamina' },
+              { key: 'touch', label: 'Touch' },
             ] as const).map((stat) => {
               const delta = previousVote ? voteStats[stat.key] - previousVote[stat.key] : 0
               const showDelta = previousVote && delta !== 0
@@ -500,6 +619,28 @@ export function PlayersPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium block mb-2 text-white">Work Rate</label>
+                <SegmentedBar
+                  value={voteStats.work_rate}
+                  onChange={(value) => setVoteStats({ ...voteStats, work_rate: value })}
+                  segments={4}
+                  showLabels={false}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-2 text-white">Mindset</label>
+                <SegmentedBar
+                  value={voteStats.mindset}
+                  onChange={(value) => setVoteStats({ ...voteStats, mindset: value })}
+                  segments={3}
+                  showLabels={false}
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">

@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Modal } from './ui/modal'
 import { Button } from './ui/button'
 import { PlayerWithStats, StatsSummary } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import { SegmentedBar } from './ui/segmented-bar'
+import { PlayerCard } from './player-card'
+import { toPng } from 'html-to-image'
+import { Share2, Copy, Palette, Star } from 'lucide-react'
 
 interface PlayerDetailModalProps {
   isOpen: boolean
@@ -21,6 +25,9 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
   const [saving, setSaving] = useState(false)
   const [statsSummary, setStatsSummary] = useState<StatsSummary | null>(null)
   const [extraStatsOpen, setExtraStatsOpen] = useState(false)
+  const [performanceStatsOpen, setPerformanceStatsOpen] = useState(true)
+  const [sharing, setSharing] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
   
   const supabase = createClient()
   
@@ -29,6 +36,7 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
   useEffect(() => {
     if (isOpen) {
       setExtraStatsOpen(false)
+      setPerformanceStatsOpen(true)
       if (player) {
         fetchPlayerStats(player.id)
       }
@@ -114,6 +122,113 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
       setSaving(false)
     }
   }
+
+  const handleShare = async () => {
+    if (!player) return
+    setSharing(true)
+
+    try {
+      // Generate the share URL
+      const baseUrl = window.location.origin
+      const shareUrl = `${baseUrl}?player=${player.id}`
+
+      // Try to capture the card as an image
+      let file = null
+      if (cardRef.current) {
+        try {
+          const dataUrl = await toPng(cardRef.current, {
+            width: 300,
+            height: 400,
+            quality: 1,
+          })
+          const response = await fetch(dataUrl)
+          const blob = await response.blob()
+          file = new File([blob], `${player.name}-card.png`, { type: 'image/png' })
+        } catch (imageError) {
+          console.error('Image capture failed:', imageError)
+          // Continue without image
+        }
+      }
+
+      // Check if Web Share API is available
+      if (navigator.share) {
+        const shareData: any = {
+          title: `${player.name} - Soccer Stats`,
+          text: `Check out ${player.name}'s player card!`,
+          url: shareUrl,
+        }
+        if (file) {
+          shareData.files = [file]
+        }
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(shareUrl)
+          alert('Link copied to clipboard!')
+        } else {
+          // Fallback for non-secure contexts
+          const textArea = document.createElement('textarea')
+          textArea.value = shareUrl
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-9999px'
+          document.body.appendChild(textArea)
+          textArea.select()
+          try {
+            document.execCommand('copy')
+            alert('Link copied to clipboard!')
+          } catch (err) {
+            console.error('Fallback copy failed:', err)
+            alert('Failed to copy link. Please copy manually: ' + shareUrl)
+          }
+          document.body.removeChild(textArea)
+        }
+      }
+    } catch (error: any) {
+      console.error('Share error:', error)
+      if (error.name !== 'AbortError') {
+        alert('Failed to share. Link copied to clipboard instead.')
+        const baseUrl = window.location.origin
+        const shareUrl = `${baseUrl}?player=${player.id}`
+        await navigator.clipboard.writeText(shareUrl)
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!player) return
+    const baseUrl = window.location.origin
+    const shareUrl = `${baseUrl}?player=${player.id}`
+    
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl)
+        alert('Link copied to clipboard!')
+      } else {
+        // Fallback for non-secure contexts or older browsers
+        const textArea = document.createElement('textarea')
+        textArea.value = shareUrl
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-9999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          alert('Link copied to clipboard!')
+        } catch (err) {
+          console.error('Fallback copy failed:', err)
+          alert('Failed to copy link. Please copy manually: ' + shareUrl)
+        }
+        document.body.removeChild(textArea)
+      }
+    } catch (error: any) {
+      console.error('Copy error:', error)
+      alert('Failed to copy link. Please copy manually: ' + shareUrl)
+    }
+  }
   
   if (!player) return null
 
@@ -147,9 +262,12 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
 
   const extraStatBars = [
     { label: 'Vision', value: stats.vision, max: 99, color: 'bg-cyan-500', textColor: 'text-cyan-500' },
-    { label: 'Work Rate', value: stats.work_rate, max: 99, color: 'bg-pink-500', textColor: 'text-pink-500' },
     { label: 'Stamina', value: stats.stamina, max: 99, color: 'bg-teal-500', textColor: 'text-teal-500' },
+    { label: 'Touch', value: stats.touch, max: 99, color: 'bg-purple-500', textColor: 'text-purple-500' },
   ]
+
+  const workRateLabels = ['Gio', 'Low', 'Medium', 'High']
+  const mindsetLabels = ['Poor', 'Average', 'Elite']
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="" accentColor={player.card_color || undefined}>
@@ -196,18 +314,18 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
             </div>
             <div className="flex flex-col gap-1 mt-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-300 w-20">Skill Moves</span>
-                <span className="flex gap-0.5">
+                <span className="text-xs sm:text-sm font-semibold text-gray-300 w-16 sm:w-20">Skill Move</span>
+                <span className="flex gap-0">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star} className={`text-xl ${star <= Math.floor(Number(stats.skill_moves)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
+                    <span key={star} className={`text-sm sm:text-xl ${star <= Math.floor(Number(stats.skill_moves)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
                   ))}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-300 w-20">Weak Foot</span>
-                <span className="flex gap-0.5">
+                <span className="text-xs sm:text-sm font-semibold text-gray-300 w-16 sm:w-20">Weak Foot</span>
+                <span className="flex gap-0">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star} className={`text-xl ${star <= Math.floor(Number(stats.weak_foot)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
+                    <span key={star} className={`text-sm sm:text-xl ${star <= Math.floor(Number(stats.weak_foot)) ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
                   ))}
                 </span>
               </div>
@@ -256,119 +374,186 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
               </span>
             </button>
             <p className="text-xs text-gray-400 mb-4">These do not affect the overall rating.</p>
-            {extraStatsOpen && extraStatBars.map((stat) => {
-              const max = stat.max || 99
-              const displayValue = Number(stat.value)
-              return (
-                <div key={stat.label} className="mb-3 last:mb-0">
+            {extraStatsOpen && (
+              <>
+                {extraStatBars.map((stat) => {
+                  const max = stat.max || 99
+                  const displayValue = Number(stat.value)
+                  return (
+                    <div key={stat.label} className="mb-3 last:mb-0">
+                      <div className="flex justify-between mb-1">
+                        <span className={`font-bold text-sm ${stat.textColor}`}>{stat.label}</span>
+                        <span className={`font-bold text-sm ${stat.textColor}`}>{stat.value}</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-3">
+                        <div
+                          className={`${stat.color} h-3 rounded-full transition-all duration-500`}
+                          style={{ width: `${(displayValue / max) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="mb-3">
                   <div className="flex justify-between mb-1">
-                    <span className={`font-bold text-sm ${stat.textColor}`}>{stat.label}</span>
-                    <span className={`font-bold text-sm ${stat.textColor}`}>{stat.value}</span>
+                    <span className="font-bold text-sm text-white">Work Rate</span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-3">
-                    <div
-                      className={`${stat.color} h-3 rounded-full transition-all duration-500`}
-                      style={{ width: `${(displayValue / max) * 100}%` }}
-                    />
-                  </div>
+                  <SegmentedBar
+                    value={stats.work_rate}
+                    onChange={() => {}}
+                    segments={4}
+                    labels={workRateLabels}
+                    disabled
+                    showLabels={false}
+                  />
                 </div>
-              )
-            })}
+                <div className="mb-3">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-bold text-sm text-white">Mindset</span>
+                  </div>
+                  <SegmentedBar
+                    value={stats.mindset}
+                    onChange={() => {}}
+                    segments={3}
+                    labels={mindsetLabels}
+                    disabled
+                    showLabels={false}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Performance Stats */}
-        {statsSummary && (
-          <div className="space-y-3 border-t border-gray-700 pt-4">
+        <div className="space-y-3 border-t border-gray-700 pt-4">
+          <button
+            onClick={() => setPerformanceStatsOpen(!performanceStatsOpen)}
+            className="w-full flex items-center justify-between"
+          >
             <h4 className="text-lg font-bold text-white">Performance Stats</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Total Goals</p>
-                <p className="text-xl font-bold text-green-400">{statsSummary.total_goals}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Total Assists</p>
-                <p className="text-xl font-bold text-blue-400">{statsSummary.total_assists}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Games Played</p>
-                <p className="text-xl font-bold text-purple-400">{statsSummary.total_games}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Total Hours</p>
-                <p className="text-xl font-bold text-yellow-400">{statsSummary.total_hours.toFixed(1)}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Goals/Game</p>
-                <p className="text-xl font-bold text-green-400">{statsSummary.goals_per_game.toFixed(2)}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Assists/Game</p>
-                <p className="text-xl font-bold text-blue-400">{statsSummary.assists_per_game.toFixed(2)}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Goals (Week)</p>
-                <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_week}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-gray-400 text-xs">Assists (Week)</p>
-                <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_week}</p>
-              </div>
-            </div>
-          </div>
-        )}
+            <span className={`text-gray-400 transition-transform duration-200 ${performanceStatsOpen ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </button>
+          {performanceStatsOpen && (
+            <>
+              {statsSummary ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Total Goals</p>
+                    <p className="text-xl font-bold text-green-400">{statsSummary.total_goals}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Total Assists</p>
+                    <p className="text-xl font-bold text-blue-400">{statsSummary.total_assists}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Goals (Week)</p>
+                    <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_week}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Assists (Week)</p>
+                    <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_week}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Goals (Month)</p>
+                    <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_month}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-gray-400 text-xs">Assists (Month)</p>
+                    <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_month}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-800 rounded-lg p-4 text-center">
+                  <p className="text-gray-400 text-sm">Please add goals and assists to the stats tracker to see analytics</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
-        {onVote && (
-          <div className="pt-4">
-            <Button onClick={onVote} className="w-full">
-            Rate This Player
+        {/* Action Buttons */}
+        <div className="pt-4 border-t border-gray-700 space-y-2">
+          {onVote && (
+            <Button
+              onClick={onVote}
+              className="w-full"
+              title="Rate Player"
+            >
+              <Star size={16} className="mr-2" />
+              Rate Player
             </Button>
-          </div>
-        )}
-
-        {isOwnPlayer && (
-          <div className="pt-4 border-t border-gray-700">
-            {editingColor ? (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Card Shadow Color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newColor}
-                    onChange={(e) => setNewColor(e.target.value)}
-                    className="w-12 h-12 rounded cursor-pointer border-2 border-gray-600"
-                  />
-                  <input
-                    type="text"
-                    value={newColor}
-                    onChange={(e) => setNewColor(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-                    placeholder="#f59e0b"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveColor} className="flex-1" disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Color'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditingColor(false)
-                      setNewColor(player.card_color || '#f59e0b')
-                    }}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button onClick={() => setEditingColor(true)} variant="outline" className="w-full">
-                Change Card Color
+          )}
+          <div className="flex gap-2 justify-center">
+            <Button
+              onClick={handleShare}
+              disabled={sharing}
+              variant="outline"
+              className="flex-1"
+              title="Share Player Card"
+            >
+              <Share2 size={16} className="mr-2" />
+              Share
+            </Button>
+            <Button
+              onClick={handleCopyLink}
+              variant="outline"
+              className="flex-1"
+              title="Copy Link"
+            >
+              <Copy size={16} className="mr-2" />
+              Copy
+            </Button>
+            {isOwnPlayer && (
+              <Button
+                onClick={() => setEditingColor(!editingColor)}
+                variant="outline"
+                className="flex-1"
+                title="Change Card Color"
+              >
+                <Palette size={16} className="mr-2" />
+                Color
               </Button>
             )}
           </div>
-        )}
+
+          {editingColor && isOwnPlayer && (
+            <div className="mt-3 space-y-3">
+              <label className="block text-sm font-medium text-white">Card Shadow Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="w-12 h-12 rounded cursor-pointer border-2 border-gray-600"
+                />
+                <input
+                  type="text"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveColor} disabled={saving} className="flex-1">
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+                <Button onClick={() => setEditingColor(false)} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Hidden card for image capture */}
+        <div className="fixed -left-[9999px] top-0">
+          <div ref={cardRef} className="w-[300px]">
+            <PlayerCard player={player} />
+          </div>
+        </div>
       </div>
     </Modal>
   )
