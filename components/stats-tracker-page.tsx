@@ -6,6 +6,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { Modal } from './ui/modal'
 import { Button } from './ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { Plus } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -204,8 +205,14 @@ export function StatsTrackerPage({ onNavigateToProfile }: { onNavigateToProfile?
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Stats Tracker</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Stats Tracker</h1>
+            <p className="text-gray-400 mt-2">
+              Add your goals and assists to see your progress over time.
+            </p>
+          </div>
           <Button onClick={() => setIsModalOpen(true)} className="bg-green-600 hover:bg-green-700">
+            <Plus size={16} className="mr-2" />
             Add Entry
           </Button>
         </div>
@@ -268,7 +275,7 @@ export function StatsTrackerPage({ onNavigateToProfile }: { onNavigateToProfile?
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-gray-800 rounded-lg p-6 mb-2">
           <h2 className="text-xl font-bold text-white mb-4">Recent Entries</h2>
           {entries.length === 0 ? (
             <p className="text-gray-400">No entries yet. Add your first game!</p>

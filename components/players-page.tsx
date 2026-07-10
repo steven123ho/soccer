@@ -576,7 +576,7 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
       <div className="mt-12">
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-white">Community Cards</h2>
-          <p className="text-gray-400 text-sm">Cards created by the community</p>
+          <p className="text-gray-400 text-sm">Cards created by other users.</p>
         </div>
 
         {generatedCards.length === 0 ? (

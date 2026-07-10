@@ -223,7 +223,12 @@ export function PlayPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-white">Play</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-white">Play</h2>
+          <p className="text-gray-400 text-sm mt-1">
+            Create a new game to pick teams and vote for the MOTM.
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowHistory(!showHistory)} variant="outline">
             {showHistory ? 'Active Games' : 'History'}
@@ -374,8 +379,8 @@ export function PlayPage() {
                     {/* MOTM Voting Section */}
                     {game.status !== 'completed' && teamA.length > 0 && teamB.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-700">
-                        <h4 className="text-lg font-bold mb-4 text-white">Man of the Match</h4>
-                        <p className="text-sm text-gray-400 mb-4">Select a player and submit your vote (only participants can vote)</p>
+                        <h4 className="text-lg font-bold text-white">Man of the Match</h4>
+                        <p className="text-sm text-gray-400 mb-4">Player with the most votes will be awarded the MOTM award.</p>
                         
                         <div className="grid grid-cols-3 gap-3 mb-4">
                           {[...teamA, ...teamB].map((p: any) => {

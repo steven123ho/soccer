@@ -10,10 +10,14 @@ import { PlayerCard } from './player-card'
 
 interface CardBuilderProps {
   onCardCreated?: () => void
+  embedded?: boolean
 }
 
-export function CardBuilder({ onCardCreated }: CardBuilderProps) {
-  const [showCreateModal, setShowCreateModal] = useState(false)
+export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProps) {
+  const [showCardModal, setShowCardModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
   const [canCreateCard, setCanCreateCard] = useState(true)
   const [nextCardTime, setNextCardTime] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,6 +36,7 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
   const [showCropModal, setShowCropModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [myCards, setMyCards] = useState<any[]>([])
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const supabase = createClient()
 
@@ -300,8 +305,7 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
 
       setCanCreateCard(false)
       await fetchMyCards()
-      setShowCreateModal(false)
-      resetForm()
+      closeCardModal()
       
       if (onCardCreated) onCardCreated()
     } catch (error: any) {
@@ -310,6 +314,73 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
       setSaving(false)
     }
   }
+
+  const handleUpdateCard = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingCardId) return
+
+    setSaving(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      let imageUrl = existingImageUrl
+      if (cardPhotoFile) {
+        imageUrl = await uploadPhoto(cardPhotoFile, user.id)
+      }
+
+      const { error: cardError } = await supabase
+        .from('generated_cards')
+        .update({
+          name: cardName,
+          primary_position: cardPosition,
+          secondary_positions: cardSecondaryPositions,
+          player_number: parseInt(cardPlayerNumber) || null,
+          nationality: cardNationality || null,
+          image_url: imageUrl,
+          card_color: cardColor,
+          photo_offset_x: cardPhotoOffsetX,
+          photo_offset_y: cardPhotoOffsetY,
+        })
+        .eq('id', editingCardId)
+        .eq('creator_id', user.id)
+
+      if (cardError) throw cardError
+
+      await fetchMyCards()
+      closeCardModal()
+    } catch (error: any) {
+      alert(error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSubmitCard = modalMode === 'create' ? handleCreateCard : handleUpdateCard
+
+
+
+  const deleteCard = async (cardId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+  
+      const { error } = await supabase
+        .from('generated_cards')
+        .delete()
+        .eq('id', cardId)
+        .eq('creator_id', user.id)
+  
+      if (error) throw error
+  
+      setMyCards(prev => prev.filter(card => card.id !== cardId))
+      closeCardModal()
+    } catch (error: any) {
+      alert('Failed to delete card: ' + error.message)
+    }
+  }
+
 
   const resetForm = () => {
     setCardName('')
@@ -322,6 +393,37 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
     setCardPhotoPreview(null)
     setCardPhotoOffsetX(0)
     setCardPhotoOffsetY(0)
+    setEditingCardId(null)
+    setExistingImageUrl(null)
+    setModalMode('create')
+  }
+
+  const openCreateModal = () => {
+    resetForm()
+    setModalMode('create')
+    setShowCardModal(true)
+  }
+
+  const openEditModal = (card: any) => {
+    setCardName(card.name)
+    setCardPosition(card.primary_position)
+    setCardSecondaryPositions(card.secondary_positions || [])
+    setCardPlayerNumber(card.player_number?.toString() || '')
+    setCardNationality(card.nationality || '')
+    setCardColor(card.card_color || '#f59e0b')
+    setCardPhotoFile(null)
+    setCardPhotoPreview(card.image_url || null)
+    setExistingImageUrl(card.image_url || null)
+    setCardPhotoOffsetX(card.photo_offset_x || 0)
+    setCardPhotoOffsetY(card.photo_offset_y || 0)
+    setEditingCardId(card.id)
+    setModalMode('edit')
+    setShowCardModal(true)
+  }
+
+  const closeCardModal = () => {
+    setShowCardModal(false)
+    resetForm()
   }
 
   if (loading) {
@@ -333,11 +435,11 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
   }
 
   return (
-    <div className="pb-20">
+    <div className={embedded ? '' : 'pb-20'}>
       <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Card Builder</h2>
+        <h3 className={`font-bold text-white ${embedded ? 'text-lg' : 'text-xl sm:text-2xl'}`}>Card Builder</h3>
         <Button 
-          onClick={() => setShowCreateModal(true)} 
+          onClick={openCreateModal} 
           disabled={!canCreateCard}
           className="flex-1 sm:flex-none text-sm"
         >
@@ -368,10 +470,7 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
               <div
                 key={card.id}
                 className="relative cursor-pointer"
-                onClick={() => {
-                  // Navigate to players page and open this card
-                  if (onCardCreated) onCardCreated()
-                }}
+                onClick={() => openEditModal(card)}
               >
                 <PlayerCard
                   player={card}
@@ -386,9 +485,12 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
         )}
       </div>
 
-      {/* Create Card Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create New Card">
-        <form onSubmit={handleCreateCard} className="space-y-4">
+      <Modal
+        isOpen={showCardModal}
+        onClose={closeCardModal}
+        title={modalMode === 'create' ? 'Create New Card' : 'Edit Card'}
+      >
+        <form onSubmit={handleSubmitCard} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2 text-white">Card Name</label>
             <input
@@ -502,7 +604,9 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
               <label className="flex-1 cursor-pointer">
                 <div className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg hover:border-green-500 transition-colors">
                   <Upload size={14} className="text-white" />
-                  <span className="text-sm text-white">{cardPhotoFile ? cardPhotoFile.name : 'Upload photo...'}</span>
+                  <span className="text-sm text-white">
+                    {cardPhotoFile ? cardPhotoFile.name : cardPhotoPreview ? 'Change photo...' : 'Upload photo...'}
+                  </span>
                 </div>
                 <input
                   type="file"
@@ -543,22 +647,22 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
               </div>
             </div>
           </div>
-
           <div className="flex gap-2 pt-4">
+            {modalMode === 'edit' && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowDeleteConfirmModal(true)} // Opens the new modal
+                className="flex-1 text-sm bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </Button>
+            )}
             <Button type="submit" className="flex-1 text-sm" disabled={saving}>
               <Save size={14} className="mr-2" />
-              {saving ? 'Creating...' : 'Create Card'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowCreateModal(false)
-                resetForm()
-              }}
-              className="flex-1 text-sm"
-            >
-              Cancel
+              {saving
+                ? modalMode === 'create' ? 'Creating...' : 'Saving...'
+                : modalMode === 'create' ? 'Create Card' : 'Save Changes'}
             </Button>
           </div>
         </form>
@@ -572,6 +676,36 @@ export function CardBuilder({ onCardCreated }: CardBuilderProps) {
           originalFile={cardPhotoFile!}
         />
       </Modal>
+
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 max-w-sm w-full">
+            <h3 className="text-lg font-bold text-white mb-2">Delete Card?</h3>
+            <p className="text-gray-400 mb-6 text-sm">
+              This action cannot be undone. Are you sure you want to permanently delete this card?
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white" 
+                onClick={() => {
+                  deleteCard(editingCardId!);
+                  setShowDeleteConfirmModal(false);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}      
+
     </div>
   )
 }
