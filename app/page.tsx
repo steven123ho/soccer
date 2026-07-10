@@ -7,6 +7,7 @@ import { HomePage } from '@/components/home-page'
 import { PlayersPage } from '@/components/players-page'
 import { PlayPage } from '@/components/play-page'
 import { TeamBuilder } from '@/components/team-builder'
+import { CardBuilder } from '@/components/card-builder'
 import { StatsTrackerPage } from '@/components/stats-tracker-page'
 import { ProfilePage } from '@/components/profile-page'
 import { AuthButton } from '@/components/auth-button'
@@ -42,6 +43,7 @@ export default function Home() {
         {currentPage === 'home' && <HomePage />}
         {currentPage === 'players' && <PlayersPage initialPlayerId={playerParam || undefined} />}
         {currentPage === 'team-picker' && <PlayPage />}
+        {currentPage === 'card-builder' && <CardBuilder onCardCreated={() => setCurrentPage('players')} />}
         {currentPage === 'team-builder' && <TeamBuilder />}
         {currentPage === 'stats' && <StatsTrackerPage onNavigateToProfile={() => setCurrentPage('profile')} />}
         {currentPage === 'profile' && <ProfilePage />}

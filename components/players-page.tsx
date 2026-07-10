@@ -11,11 +11,13 @@ import { SegmentedBar } from './ui/segmented-bar'
 
 export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
   const [players, setPlayers] = useState<PlayerWithStats[]>([])
+  const [generatedCards, setGeneratedCards] = useState<any[]>([])
   const [motmBoosts, setMotmBoosts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showVoteModal, setShowVoteModal] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
+  const [selectedGeneratedCard, setSelectedGeneratedCard] = useState<any | null>(null)
   const [previousVote, setPreviousVote] = useState<any>(null)
   const [showPreviousRating, setShowPreviousRating] = useState(true)
   const [voteStats, setVoteStats] = useState({
@@ -63,6 +65,7 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
 
   useEffect(() => {
     fetchPlayers()
+    fetchGeneratedCards()
   }, [])
 
   useEffect(() => {
@@ -133,13 +136,53 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
     }
   }
 
+  const fetchGeneratedCards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('generated_cards')
+        .select(`
+          *,
+          generated_stats(*)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      console.log('Fetched generated cards:', data)
+
+      const cardsWithStats = data?.map((card: any) => ({
+        ...card,
+        stats: card.generated_stats || {
+          pace: 50,
+          shooting: 50,
+          passing: 50,
+          dribbling: 50,
+          defending: 50,
+          physical: 50,
+          touch: 50,
+          mindset: 2,
+          vote_count: 0,
+        },
+        creator_name: card.creator_name || 'Unknown',
+      })) || []
+
+      console.log('Cards with stats:', cardsWithStats)
+      setGeneratedCards(cardsWithStats)
+    } catch (error) {
+      console.error('Error fetching generated cards:', error)
+    }
+  }
+
   const handleVote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-      if (!selectedPlayer) throw new Error('No player selected')
+      if (!selectedPlayer && !selectedGeneratedCard) throw new Error('No player/card selected')
+
+      const isGeneratedCard = !!selectedGeneratedCard
+      const target = isGeneratedCard ? selectedGeneratedCard : selectedPlayer
 
       // Validate all stats are within valid ranges and ensure integers
       const validatedVoteStats = {
@@ -158,11 +201,13 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
         mindset: Number(Math.max(1, Math.min(3, voteStats.mindset || 2))),
       }
 
+      const tableName = isGeneratedCard ? 'generated_stat_votes' : 'stat_votes'
+      const cardIdField = isGeneratedCard ? 'generated_card_id' : 'player_id'
+
       // Try insert first
-      const { error: insertError } = await supabase.from('stat_votes').insert({
-        id: crypto.randomUUID(),
+      const { error: insertError } = await supabase.from(tableName).insert({
         voter_id: user.id,
-        player_id: selectedPlayer.id,
+        [cardIdField]: target.id,
         pace: validatedVoteStats.pace,
         shooting: validatedVoteStats.shooting,
         passing: validatedVoteStats.passing,
@@ -179,9 +224,10 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
       })
 
       // If insert fails due to unique constraint, update instead
-      if (insertError && insertError.code === '23505') {
+      if (insertError) {
+        console.log('Insert failed, trying update:', insertError.code)
         const { error: updateError } = await supabase
-          .from('stat_votes')
+          .from(tableName)
           .update({
             pace: validatedVoteStats.pace,
             shooting: validatedVoteStats.shooting,
@@ -198,29 +244,37 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
             mindset: validatedVoteStats.mindset,
           })
           .eq('voter_id', user.id)
-          .eq('player_id', selectedPlayer.id)
+          .eq(cardIdField, target.id)
 
         if (updateError) {
           console.error('Update error:', updateError)
           throw updateError
         }
-      } else if (insertError) {
-        console.error('Insert error:', insertError)
-        throw insertError
       }
 
       setShowVoteModal(false)
       
-      // Use RPC function to calculate and update player stats based on all votes
-      const { error: rpcError } = await supabase.rpc('update_single_player_stats', { player_id_param: selectedPlayer.id })
+      console.log('Vote submitted, updating stats for:', isGeneratedCard ? 'generated card' : 'player', target.id)
+      
+      // Use RPC function to calculate and update stats based on all votes
+      const rpcFunction = isGeneratedCard ? 'update_single_generated_card_stats' : 'update_single_player_stats'
+      const rpcParam = isGeneratedCard ? 'card_id' : 'player_id_param'
+      console.log('Calling RPC:', rpcFunction, 'with param:', rpcParam, '=', target.id)
+      
+      const { data: rpcData, error: rpcError } = await supabase.rpc(rpcFunction, { [rpcParam]: target.id })
+      
+      console.log('RPC result:', rpcError || 'success', 'data:', rpcData)
       
       if (rpcError) {
         console.error('RPC error:', rpcError)
         // Fallback: manually calculate average if RPC fails
+        console.log('Using fallback manual calculation')
         const { data: votes } = await supabase
-          .from('stat_votes')
+          .from(tableName)
           .select('*')
-          .eq('player_id', selectedPlayer.id)
+          .eq(cardIdField, target.id)
+        
+        console.log('Votes for calculation:', votes?.length)
         
         if (votes && votes.length > 0) {
           const avgStats = votes.reduce((acc: any, vote: any) => ({
@@ -243,10 +297,13 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
           })
           
           const count = votes.length
+          const statsTableName = isGeneratedCard ? 'generated_stats' : 'player_stats'
+          const statsIdField = isGeneratedCard ? 'generated_card_id' : 'player_id'
+          
           await supabase
-            .from('player_stats')
+            .from(statsTableName)
             .upsert({
-              player_id: selectedPlayer.id,
+              [statsIdField]: target.id,
               pace: Math.round(avgStats.pace / count),
               shooting: Math.round(avgStats.shooting / count),
               passing: Math.round(avgStats.passing / count),
@@ -269,7 +326,15 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
       // Wait a moment for the database to update
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      fetchPlayers()
+      // Refresh data
+      if (isGeneratedCard) {
+        await fetchGeneratedCards()
+      } else {
+        await fetchPlayers()
+      }
+
+      setSelectedPlayer(null)
+      setSelectedGeneratedCard(null)
     } catch (error: any) {
       console.error('Error submitting vote:', error)
       alert(`Failed to submit vote: ${error.message}`)
@@ -279,6 +344,45 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
   const openDetailModal = (player: PlayerWithStats) => {
     setSelectedPlayer(player)
     setShowDetailModal(true)
+  }
+
+  const openGeneratedCardDetailModal = (card: any) => {
+    setSelectedGeneratedCard(card)
+    setShowDetailModal(true)
+  }
+
+  const openGeneratedCardVoteModal = async (card: any) => {
+    setSelectedGeneratedCard(card)
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    let previousVoteData = null
+    if (user) {
+      const { data } = await supabase
+        .from('generated_stat_votes')
+        .select('*')
+        .eq('voter_id', user.id)
+        .eq('generated_card_id', card.id)
+        .single()
+      previousVoteData = data
+    }
+    
+    setPreviousVote(previousVoteData)
+    setVoteStats({
+      pace: previousVoteData?.pace ?? 50,
+      shooting: previousVoteData?.shooting ?? 50,
+      passing: previousVoteData?.passing ?? 50,
+      dribbling: previousVoteData?.dribbling ?? 50,
+      defending: previousVoteData?.defending ?? 50,
+      physical: previousVoteData?.physical ?? 50,
+      skill_moves: previousVoteData?.skill_moves ?? 3,
+      weak_foot: previousVoteData?.weak_foot ?? 3,
+      vision: previousVoteData?.vision ?? 50,
+      work_rate: previousVoteData?.work_rate ?? 2,
+      stamina: previousVoteData?.stamina ?? 50,
+      touch: previousVoteData?.touch ?? 50,
+      mindset: previousVoteData?.mindset ?? 2,
+    })
+    setShowVoteModal(true)
   }
 
   const openVoteModal = async (player: PlayerWithStats) => {
@@ -468,25 +572,76 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
         </div>
       )}
 
+      {/* Generated Cards Section */}
+      <div className="mt-12">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold text-white">Community Cards</h2>
+          <p className="text-gray-400 text-sm">Cards created by the community</p>
+        </div>
+
+        {generatedCards.length === 0 ? (
+          <div className="text-center py-8 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="text-4xl mb-2">🎴</div>
+            <p className="text-gray-400">No community cards yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-6 lg:gap-8">
+            {generatedCards.map((card) => (
+              <div
+                key={card.id}
+                className="relative cursor-pointer"
+                onClick={() => openGeneratedCardDetailModal(card)}
+              >
+                <PlayerCard
+                  player={card}
+                  motmBoost={0}
+                />
+                <div className="mt-2 text-center">
+                  <p className="text-xs text-gray-400">Created by {card.creator_name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Player Detail Modal */}
       <PlayerDetailModal
         isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        player={selectedPlayer}
+        onClose={() => {
+          setShowDetailModal(false)
+          setSelectedPlayer(null)
+          setSelectedGeneratedCard(null)
+        }}
+        player={selectedPlayer || selectedGeneratedCard}
         onVote={() => {
           setShowDetailModal(false)
-          openVoteModal(selectedPlayer!)
+          if (selectedPlayer) {
+            openVoteModal(selectedPlayer)
+          } else if (selectedGeneratedCard) {
+            openGeneratedCardVoteModal(selectedGeneratedCard)
+          }
         }}
         currentUserPlayerId={currentUserPlayerId}
-        onColorChange={() => fetchPlayers()}
+        isGeneratedCard={!!selectedGeneratedCard}
+        creatorName={selectedGeneratedCard?.creator_name}
+        onColorChange={() => {
+          if (selectedPlayer) {
+            fetchPlayers()
+          } else if (selectedGeneratedCard) {
+            fetchGeneratedCards()
+          }
+        }}
       />
 
       {/* Vote Modal */}
       <Modal isOpen={showVoteModal} onClose={() => setShowVoteModal(false)} title="">
-        {selectedPlayer && (
+        {(selectedPlayer || selectedGeneratedCard) && (
           <form onSubmit={handleVote} className="space-y-4">
             <div className="text-center mb-2">
-              <div className="text-lg font-semibold text-white">Rate Player: {selectedPlayer.name}</div>
+              <div className="text-lg font-semibold text-white">
+                Rate {selectedGeneratedCard ? 'Card' : 'Player'}: {selectedPlayer?.name || selectedGeneratedCard?.name}
+              </div>
             </div>
 
             {/* Your Previous Rating Display - Collapsible */}

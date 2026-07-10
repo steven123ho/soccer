@@ -68,6 +68,67 @@ export function PlayerCard({ player, onClick, motmBoost = 0 }: PlayerCardProps) 
 
   const shadowColors = getShadowColor()
 
+  const getGlowColor = () => {
+    if (player.card_color) {
+      const rgb = hexToRgb(player.card_color)
+      return {
+        normal: `0 0 15px 3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+        hover: `0 0 20px 5px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`
+      }
+    }
+    
+    // Fallback to rarity colors
+    if (overall >= 90) return {
+      normal: '0 0 15px 3px rgba(168,85,247,0.3)',
+      hover: '0 0 20px 5px rgba(168,85,247,0.4)'
+    }
+    if (overall >= 80) return {
+      normal: '0 0 15px 3px rgba(255,223,0,0.3)',
+      hover: '0 0 20px 5px rgba(255,223,0,0.4)'
+    }
+    if (overall >= 70) return {
+      normal: '0 0 15px 3px rgba(156,163,175,0.3)',
+      hover: '0 0 20px 5px rgba(156,163,175,0.4)'
+    }
+    return {
+      normal: '0 0 15px 3px rgba(251,146,60,0.3)',
+      hover: '0 0 20px 5px rgba(251,146,60,0.4)'
+    }
+  }
+
+  const glowColors = getGlowColor()
+
+  const getCardStyles = () => {
+    if (motmBoost > 0) {
+      return {
+        background: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)',
+        borderColor: undefined,
+        boxShadow: `0 0 20px 5px ${player.card_color ? `${player.card_color}80` : 'rgba(239, 68, 68, 0.5)'}, 0 0 30px 10px ${player.card_color ? `${player.card_color}60` : 'rgba(249, 115, 22, 0.3)'}, 0 0 40px 15px ${player.card_color ? `${player.card_color}40` : 'rgba(234, 179, 8, 0.2)'}`,
+        hoverBoxShadow: `0 0 25px 8px ${player.card_color ? `${player.card_color}99` : 'rgba(239, 68, 68, 0.6)'}, 0 0 35px 12px ${player.card_color ? `${player.card_color}80` : 'rgba(249, 115, 22, 0.4)'}, 0 0 45px 18px ${player.card_color ? `${player.card_color}60` : 'rgba(234, 179, 8, 0.3)'}`,
+        className: 'p-[3px] animate-float'
+      }
+    }
+
+    // Default to gradient-border for regular cards
+    return {
+      background: `linear-gradient(135deg, ${player.card_color || '#3b82f6'}, ${player.card_color ? adjustColor(player.card_color, 30) : '#8b5cf6'}, ${player.card_color ? adjustColor(player.card_color, -30) : '#1e40af'})`,
+      borderColor: undefined,
+      boxShadow: glowColors.normal,
+      hoverBoxShadow: glowColors.hover,
+      className: 'p-[2px] hover:scale-105 hover:-translate-y-2'
+    }
+  }
+
+  const adjustColor = (hex: string, amount: number) => {
+    const rgb = hexToRgb(hex)
+    const r = Math.max(0, Math.min(255, rgb.r + amount))
+    const g = Math.max(0, Math.min(255, rgb.g + amount))
+    const b = Math.max(0, Math.min(255, rgb.b + amount))
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  }
+
+  const cardStyles = getCardStyles()
+
   const getPositionColor = (position: string) => {
     const pos = position.toUpperCase()
     if (['ST', 'CF', 'LW', 'RW'].includes(pos)) return 'bg-red-500'
@@ -92,25 +153,17 @@ export function PlayerCard({ player, onClick, motmBoost = 0 }: PlayerCardProps) 
   return (
     <div 
       onClick={onClick}
-      className={`relative overflow-hidden transition-all duration-300 cursor-pointer group w-full max-w-[160px] sm:max-w-none rounded-lg ${
-        motmBoost > 0 ? 'p-[3px] animate-float' : `border-4 ${player.card_color ? '' : 'border-gray-700'} hover:scale-105 hover:-translate-y-2`
-      }`}
+      className={`relative overflow-hidden transition-all duration-300 cursor-pointer group w-full max-w-[160px] sm:max-w-none rounded-lg ${cardStyles.className}`}
       style={{ 
-        background: motmBoost > 0 ? 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)' : undefined,
-        borderColor: motmBoost === 0 ? (player.card_color || undefined) : undefined,
-        boxShadow: motmBoost > 0 
-          ? `0 0 20px 5px ${player.card_color ? `${player.card_color}80` : 'rgba(239, 68, 68, 0.5)'}, 0 0 30px 10px ${player.card_color ? `${player.card_color}60` : 'rgba(249, 115, 22, 0.3)'}, 0 0 40px 15px ${player.card_color ? `${player.card_color}40` : 'rgba(234, 179, 8, 0.2)'}`
-          : 'none'
+        background: cardStyles.background,
+        borderColor: cardStyles.borderColor,
+        boxShadow: cardStyles.boxShadow
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = motmBoost > 0
-          ? `0 0 25px 8px ${player.card_color ? `${player.card_color}99` : 'rgba(239, 68, 68, 0.6)'}, 0 0 35px 12px ${player.card_color ? `${player.card_color}80` : 'rgba(249, 115, 22, 0.4)'}, 0 0 45px 18px ${player.card_color ? `${player.card_color}60` : 'rgba(234, 179, 8, 0.3)'}`
-          : '0 10px 30px rgba(0,0,0,0.3)'
+        e.currentTarget.style.boxShadow = cardStyles.hoverBoxShadow
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = motmBoost > 0
-          ? `0 0 20px 5px ${player.card_color ? `${player.card_color}80` : 'rgba(239, 68, 68, 0.5)'}, 0 0 30px 10px ${player.card_color ? `${player.card_color}60` : 'rgba(249, 115, 22, 0.3)'}, 0 0 40px 15px ${player.card_color ? `${player.card_color}40` : 'rgba(234, 179, 8, 0.2)'}`
-          : 'none'
+        e.currentTarget.style.boxShadow = cardStyles.boxShadow
       }}
     >
       {/* Inner card wrapper */}
@@ -162,7 +215,7 @@ export function PlayerCard({ player, onClick, motmBoost = 0 }: PlayerCardProps) 
         {/* Overall rating - FIFA style */}
         <div className="absolute top-2 left-2 flex flex-col items-center">
           <div 
-            className={`w-14 h-14 rounded-full border-4 flex items-center justify-center backdrop-blur-sm ${
+            className={`w-14 h-14 rounded-full border-2 flex items-center justify-center backdrop-blur-sm ${
               motmBoost > 0 ? 'bg-black/40' : 'bg-black/30'
             }`}
             style={{

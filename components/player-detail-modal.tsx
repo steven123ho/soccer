@@ -17,9 +17,11 @@ interface PlayerDetailModalProps {
   onVote?: () => void
   currentUserPlayerId?: string | null
   onColorChange?: () => void
+  isGeneratedCard?: boolean
+  creatorName?: string
 }
 
-export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUserPlayerId, onColorChange }: PlayerDetailModalProps) {
+export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUserPlayerId, onColorChange, isGeneratedCard, creatorName }: PlayerDetailModalProps) {
   const [editingColor, setEditingColor] = useState(false)
   const [newColor, setNewColor] = useState(player?.card_color || '#f59e0b')
   const [saving, setSaving] = useState(false)
@@ -37,11 +39,11 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     if (isOpen) {
       setExtraStatsOpen(false)
       setPerformanceStatsOpen(true)
-      if (player) {
+      if (player && !isGeneratedCard) {
         fetchPlayerStats(player.id)
       }
     }
-  }, [player?.id, isOpen])
+  }, [player?.id, isOpen, isGeneratedCard])
 
   const fetchPlayerStats = async (playerId: string) => {
     const { data } = await supabase
@@ -425,54 +427,63 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
           </div>
         </div>
 
-        {/* Performance Stats */}
-        <div className="space-y-3 border-t border-gray-700 pt-4">
-          <button
-            onClick={() => setPerformanceStatsOpen(!performanceStatsOpen)}
-            className="w-full flex items-center justify-between"
-          >
-            <h4 className="text-lg font-bold text-white">Performance Stats</h4>
-            <span className={`text-gray-400 transition-transform duration-200 ${performanceStatsOpen ? 'rotate-180' : ''}`}>
-              ▼
-            </span>
-          </button>
-          {performanceStatsOpen && (
-            <>
-              {statsSummary ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Total Goals</p>
-                    <p className="text-xl font-bold text-green-400">{statsSummary.total_goals}</p>
+        {/* Performance Stats / Creator Info */}
+        {!isGeneratedCard ? (
+          <div className="space-y-3 border-t border-gray-700 pt-4">
+            <button
+              onClick={() => setPerformanceStatsOpen(!performanceStatsOpen)}
+              className="w-full flex items-center justify-between"
+            >
+              <h4 className="text-lg font-bold text-white">Performance Stats</h4>
+              <span className={`text-gray-400 transition-transform duration-200 ${performanceStatsOpen ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+            {performanceStatsOpen && (
+              <>
+                {statsSummary ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Total Goals</p>
+                      <p className="text-xl font-bold text-green-400">{statsSummary.total_goals}</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Total Assists</p>
+                      <p className="text-xl font-bold text-blue-400">{statsSummary.total_assists}</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Goals (Week)</p>
+                      <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_week}</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Assists (Week)</p>
+                      <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_week}</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Goals (Month)</p>
+                      <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_month}</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-gray-400 text-xs">Assists (Month)</p>
+                      <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_month}</p>
+                    </div>
                   </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Total Assists</p>
-                    <p className="text-xl font-bold text-blue-400">{statsSummary.total_assists}</p>
+                ) : (
+                  <div className="bg-gray-800 rounded-lg p-4 text-center">
+                    <p className="text-gray-400 text-sm">Please add goals and assists to the stats tracker to see analytics</p>
                   </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Goals (Week)</p>
-                    <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_week}</p>
-                  </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Assists (Week)</p>
-                    <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_week}</p>
-                  </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Goals (Month)</p>
-                    <p className="text-xl font-bold text-green-400">{statsSummary.goals_last_month}</p>
-                  </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Assists (Month)</p>
-                    <p className="text-xl font-bold text-blue-400">{statsSummary.assists_last_month}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-800 rounded-lg p-4 text-center">
-                  <p className="text-gray-400 text-sm">Please add goals and assists to the stats tracker to see analytics</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3 border-t border-gray-700 pt-4">
+            <div className="bg-gray-800 rounded-lg p-4">
+              <p className="text-gray-400 text-xs">Created by</p>
+              <p className="text-xl font-bold text-white">{creatorName || 'Unknown'}</p>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="pt-4 border-t border-gray-700 space-y-2">

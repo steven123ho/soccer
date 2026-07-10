@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, Users, PlusCircle, BarChart3, User, Shuffle } from 'lucide-react'
+import { Home, Users, PlusCircle, BarChart3, User, Shuffle, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavigationProps {
@@ -10,7 +10,8 @@ interface NavigationProps {
 
 const navItems = [
   { id: 'players', label: 'Players', icon: Users },
-  { id: 'team-builder', label: 'Builder', icon: PlusCircle },
+  { id: 'card-builder', label: 'Card Builder', icon: PlusCircle },
+  { id: 'team-builder', label: 'Team Builder', icon: Layers },
   { id: 'team-picker', label: 'Play', icon: Shuffle },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
