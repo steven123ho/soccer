@@ -167,8 +167,13 @@ export function PlayPage() {
       setUserVotes(prev => ({ ...prev, [gameId]: selectedMotmCandidate }))
       setSelectedMotmCandidate(null)
 
-      // Refresh votes for this game
+      // Refresh votes and game data
       await fetchMotmVotesForGame(gameId)
+      
+      // Complete game and award MOTM boost if conditions are met
+      await supabase.rpc('complete_game_and_award_motm', { p_game_id: gameId })
+      
+      await fetchGames()
     } catch (error: any) {
       alert(error.message)
     }
@@ -376,11 +381,35 @@ export function PlayPage() {
                       </div>
                     </div>
 
-                    {/* MOTM Voting Section */}
-                    {game.status !== 'completed' && teamA.length > 0 && teamB.length > 0 && (
+                    {/* MOTM Winner / Voting Section */}
+                    {teamA.length > 0 && teamB.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-700">
                         <h4 className="text-lg font-bold text-white">Man of the Match</h4>
-                        <p className="text-sm text-gray-400 mb-4">Player with the most votes will be awarded the MOTM award.</p>
+                        
+                        {game.status === 'completed' ? (
+                          <div className="mt-4 bg-yellow-500/10 border-2 border-yellow-500 rounded-lg p-4 text-center">
+                            <Trophy size={32} className="mx-auto text-yellow-500 mb-2" />
+                            <p className="text-yellow-400 font-bold text-lg">
+                              {(() => {
+                                const allPlayers = [...teamA, ...teamB]
+                                let winnerId = ''
+                                let maxVotes = -1
+                                allPlayers.forEach(p => {
+                                  const count = getVoteCount(game.id, p.player_id)
+                                  if (count > maxVotes) {
+                                    maxVotes = count
+                                    winnerId = p.player_id
+                                  }
+                                })
+                                const winner = allPlayers.find(p => p.player_id === winnerId)
+                                return winner ? `Winner: ${winner.player?.name}` : 'MOTM Awarded'
+                              })()}
+                            </p>
+                            <p className="text-gray-400 text-sm mt-1">+10 boost applied to player rating</p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-400 mb-4">Player with the most votes will be awarded the MOTM award.</p>
                         
                         <div className="grid grid-cols-3 gap-3 mb-4">
                           {[...teamA, ...teamB].map((p: any) => {
@@ -435,6 +464,8 @@ export function PlayPage() {
                             Submit Vote
                           </Button>
                         </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

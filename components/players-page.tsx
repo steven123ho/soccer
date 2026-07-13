@@ -92,11 +92,7 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
 
       if (error) throw error
 
-      console.log('Fetched players data:', data)
-
-      const playersWithStats = data?.map((player: any) => {
-        console.log('Player stats for', player.name, ':', player.player_stats)
-        return {
+      const playersWithStats = data?.map((player: any) => ({
           ...player,
           stats: player.player_stats || {
             pace: 50,
@@ -114,10 +110,7 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
             mindset: 2,
             vote_count: 0,
           },
-        }
-      }) || []
-
-      console.log('Players with stats:', playersWithStats)
+        })) || []
 
       setPlayers(playersWithStats)
       
@@ -148,8 +141,6 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
 
       if (error) throw error
 
-      console.log('Fetched generated cards:', data)
-
       const cardsWithStats = data?.map((card: any) => ({
         ...card,
         stats: card.generated_stats || {
@@ -161,12 +152,16 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
           physical: 50,
           touch: 50,
           mindset: 2,
+          vision: 50,
+          stamina: 50,
+          skill_moves: 3,
+          weak_foot: 3,
+          work_rate: 2,
           vote_count: 0,
         },
         creator_name: card.creator_name || 'Unknown',
       })) || []
 
-      console.log('Cards with stats:', cardsWithStats)
       setGeneratedCards(cardsWithStats)
     } catch (error) {
       console.error('Error fetching generated cards:', error)
@@ -225,7 +220,6 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
 
       // If insert fails due to unique constraint, update instead
       if (insertError) {
-        console.log('Insert failed, trying update:', insertError.code)
         const { error: updateError } = await supabase
           .from(tableName)
           .update({
@@ -254,27 +248,18 @@ export function PlayersPage({ initialPlayerId }: { initialPlayerId?: string }) {
 
       setShowVoteModal(false)
       
-      console.log('Vote submitted, updating stats for:', isGeneratedCard ? 'generated card' : 'player', target.id)
-      
       // Use RPC function to calculate and update stats based on all votes
       const rpcFunction = isGeneratedCard ? 'update_single_generated_card_stats' : 'update_single_player_stats'
       const rpcParam = isGeneratedCard ? 'card_id' : 'player_id_param'
-      console.log('Calling RPC:', rpcFunction, 'with param:', rpcParam, '=', target.id)
-      
-      const { data: rpcData, error: rpcError } = await supabase.rpc(rpcFunction, { [rpcParam]: target.id })
-      
-      console.log('RPC result:', rpcError || 'success', 'data:', rpcData)
+      const { error: rpcError } = await supabase.rpc(rpcFunction, { [rpcParam]: target.id })
       
       if (rpcError) {
         console.error('RPC error:', rpcError)
         // Fallback: manually calculate average if RPC fails
-        console.log('Using fallback manual calculation')
         const { data: votes } = await supabase
           .from(tableName)
           .select('*')
           .eq(cardIdField, target.id)
-        
-        console.log('Votes for calculation:', votes?.length)
         
         if (votes && votes.length > 0) {
           const avgStats = votes.reduce((acc: any, vote: any) => ({

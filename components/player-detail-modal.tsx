@@ -241,6 +241,8 @@ export function PlayerDetailModal({ isOpen, onClose, player, onVote, currentUser
     dribbling: 50,
     defending: 50,
     physical: 50,
+    touch: 50,
+    mindset: 2,
     skill_moves: 1,
     weak_foot: 1,
     vision: 50,

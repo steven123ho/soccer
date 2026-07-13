@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
-import { Upload, Save, Sparkles } from 'lucide-react'
+import { Upload, Save, Sparkles, Trash2 } from 'lucide-react'
 import { ImageCropModal } from './image-crop-modal'
 import { PlayerCard } from './player-card'
 
@@ -36,7 +36,8 @@ export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProp
   const [showCropModal, setShowCropModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [myCards, setMyCards] = useState<any[]>([])
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -276,7 +277,14 @@ export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProp
         imageUrl = await uploadPhoto(cardPhotoFile, user.id)
       }
 
-      const creatorName = user.email?.split('@')[0] || 'Unknown'
+      // Get the player's chosen name
+      const { data: playerData } = await supabase
+        .from('players')
+        .select('name')
+        .eq('user_id', user.id)
+        .single()
+
+      const creatorName = playerData?.name || user.email?.split('@')[0] || 'Unknown'
 
       const { error: cardError } = await supabase
         .from('generated_cards')
@@ -359,28 +367,31 @@ export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProp
 
   const handleSubmitCard = modalMode === 'create' ? handleCreateCard : handleUpdateCard
 
+  const handleDeleteCard = async (cardId: string) => {
+    setCardToDelete(cardId)
+    setShowDeleteConfirm(true)
+    setShowCardModal(false)
+  }
 
+  const confirmDeleteCard = async () => {
+    if (!cardToDelete) return
 
-  const deleteCard = async (cardId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-  
       const { error } = await supabase
         .from('generated_cards')
         .delete()
-        .eq('id', cardId)
-        .eq('creator_id', user.id)
-  
+        .eq('id', cardToDelete)
+
       if (error) throw error
-  
-      setMyCards(prev => prev.filter(card => card.id !== cardId))
-      closeCardModal()
+
+      setShowDeleteConfirm(false)
+      setCardToDelete(null)
+      await fetchMyCards()
+      if (onCardCreated) onCardCreated()
     } catch (error: any) {
-      alert('Failed to delete card: ' + error.message)
+      alert(error.message)
     }
   }
-
 
   const resetForm = () => {
     setCardName('')
@@ -647,23 +658,45 @@ export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProp
               </div>
             </div>
           </div>
-          <div className="flex gap-2 pt-4">
-            {modalMode === 'edit' && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowDeleteConfirmModal(true)} // Opens the new modal
-                className="flex-1 text-sm bg-red-600 hover:bg-red-700 text-white"
-              >
-                Delete
-              </Button>
-            )}
-            <Button type="submit" className="flex-1 text-sm" disabled={saving}>
+
+          <div className="space-y-2 pt-4">
+            <Button type="submit" className="w-full text-sm" disabled={saving}>
               <Save size={14} className="mr-2" />
               {saving
                 ? modalMode === 'create' ? 'Creating...' : 'Saving...'
                 : modalMode === 'create' ? 'Create Card' : 'Save Changes'}
             </Button>
+            {modalMode === 'edit' && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDeleteCard(editingCardId!)}
+                  className="flex-1 text-sm border-red-600 text-red-400 hover:bg-red-900/30"
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Delete
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeCardModal}
+                  className="flex-1 text-sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+            {modalMode === 'create' && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeCardModal}
+                className="w-full text-sm"
+              >
+                Cancel
+              </Button>
+            )}
           </div>
         </form>
 
@@ -677,35 +710,30 @@ export function CardBuilder({ onCardCreated, embedded = false }: CardBuilderProp
         />
       </Modal>
 
-      {showDeleteConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-white mb-2">Delete Card?</h3>
-            <p className="text-gray-400 mb-6 text-sm">
-              This action cannot be undone. Are you sure you want to permanently delete this card?
-            </p>
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleteConfirmModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white" 
-                onClick={() => {
-                  deleteCard(editingCardId!);
-                  setShowDeleteConfirmModal(false);
-                }}
-              >
-                Delete
-              </Button>
-            </div>
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Card"
+      >
+        <div className="space-y-4">
+          <p className="text-white">Are you sure you want to delete this card? This action cannot be undone.</p>
+          <div className="flex gap-2">
+            <Button
+              onClick={confirmDeleteCard}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
           </div>
         </div>
-      )}      
-
+      </Modal>
     </div>
   )
 }

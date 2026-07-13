@@ -209,7 +209,6 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
       }
 
       const { error } = await supabase.from('players').insert({
-        id: crypto.randomUUID(),
         user_id: user.id,
         name,
         primary_position: position,
