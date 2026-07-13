@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import { HomePage } from '@/components/home-page'
@@ -12,7 +12,7 @@ import { ProfilePage } from '@/components/profile-page'
 import { AuthButton } from '@/components/auth-button'
 import { MOTMCardPreview } from '@/components/motm-card-preview'
 
-export default function Home() {
+function HomeContent() {
   const [currentPage, setCurrentPage] = useState('players')
   const searchParams = useSearchParams()
   const playerParam = searchParams.get('player')
@@ -50,5 +50,13 @@ export default function Home() {
 
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center text-white">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }
