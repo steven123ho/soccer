@@ -15,19 +15,23 @@ interface FieldPosition {
   player: PlayerWithStats | null
 }
 
-export function TeamBuilder() {
+interface TeamBuilderProps {
+  embedded?: boolean
+}
+
+export function TeamBuilder({ embedded = false }: TeamBuilderProps) {
   const [players, setPlayers] = useState<PlayerWithStats[]>([])
   const [fieldPositions, setFieldPositions] = useState<FieldPosition[]>([])
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showFormationModal, setShowFormationModal] = useState(true)
+  const [teamActive, setTeamActive] = useState(false)
+  const [showFormationModal, setShowFormationModal] = useState(false)
   const [formation, setFormation] = useState({ defenders: 4, midfielders: 3, attackers: 3 })
 
   const supabase = createClient()
 
   useEffect(() => {
     fetchPlayers()
-    initializeField()
   }, [])
 
   const fetchPlayers = async () => {
@@ -63,51 +67,6 @@ export function TeamBuilder() {
     }
   }
 
-  const initializeField = () => {
-    const positions: FieldPosition[] = []
-    
-    // Add GK
-    positions.push({ id: 'gk', name: 'GK', x: 50, y: 90, player: null })
-    
-    // Add defenders in a straight line
-    const defenderSpacing = 99.5 / (formation.defenders + 1)
-    for (let i = 0; i < formation.defenders; i++) {
-      positions.push({
-        id: `def-${i}`,
-        name: 'DEF',
-        x: 0.25 + defenderSpacing * (i + 1),
-        y: 70,
-        player: null
-      })
-    }
-    
-    // Add midfielders in a straight line
-    const midfielderSpacing = 99.5 / (formation.midfielders + 1)
-    for (let i = 0; i < formation.midfielders; i++) {
-      positions.push({
-        id: `mid-${i}`,
-        name: 'MID',
-        x: 0.25 + midfielderSpacing * (i + 1),
-        y: 45,
-        player: null
-      })
-    }
-    
-    // Add attackers in a straight line
-    const attackerSpacing = 99.5 / (formation.attackers + 1)
-    for (let i = 0; i < formation.attackers; i++) {
-      positions.push({
-        id: `att-${i}`,
-        name: 'ATT',
-        x: 0.25 + attackerSpacing * (i + 1),
-        y: 20,
-        player: null
-      })
-    }
-    
-    setFieldPositions(positions)
-  }
-
   const handlePlayerSelect = (player: PlayerWithStats) => {
     setSelectedPlayer(player)
   }
@@ -128,14 +87,53 @@ export function TeamBuilder() {
     )
   }
 
-  const resetFormation = () => {
-    setShowFormationModal(true)
-  }
-
   const handleFormationSelect = (def: number, mid: number, att: number) => {
     setFormation({ defenders: def, midfielders: mid, attackers: att })
     setShowFormationModal(false)
-    initializeField()
+    setTeamActive(true)
+    setSelectedPlayer(null)
+    initializeFieldWithFormation({ defenders: def, midfielders: mid, attackers: att })
+  }
+
+  const initializeFieldWithFormation = (form: { defenders: number; midfielders: number; attackers: number }) => {
+    const positions: FieldPosition[] = []
+
+    positions.push({ id: 'gk', name: 'GK', x: 50, y: 90, player: null })
+
+    const defenderSpacing = 99.5 / (form.defenders + 1)
+    for (let i = 0; i < form.defenders; i++) {
+      positions.push({
+        id: `def-${i}`,
+        name: 'DEF',
+        x: 0.25 + defenderSpacing * (i + 1),
+        y: 70,
+        player: null
+      })
+    }
+
+    const midfielderSpacing = 99.5 / (form.midfielders + 1)
+    for (let i = 0; i < form.midfielders; i++) {
+      positions.push({
+        id: `mid-${i}`,
+        name: 'MID',
+        x: 0.25 + midfielderSpacing * (i + 1),
+        y: 45,
+        player: null
+      })
+    }
+
+    const attackerSpacing = 99.5 / (form.attackers + 1)
+    for (let i = 0; i < form.attackers; i++) {
+      positions.push({
+        id: `att-${i}`,
+        name: 'ATT',
+        x: 0.25 + attackerSpacing * (i + 1),
+        y: 20,
+        player: null
+      })
+    }
+
+    setFieldPositions(positions)
   }
 
   const handleDragStart = (e: React.DragEvent, player: PlayerWithStats) => {
@@ -185,20 +183,36 @@ export function TeamBuilder() {
   }
 
   return (
-    <div className="pb-20">
+    <div className={embedded ? '' : 'pb-20'}>
       <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Team Builder</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={() => setShowFormationModal(true)} className="flex-1 sm:flex-none text-sm">
-            Change Formation
+        <h3 className={`font-bold text-white ${embedded ? 'text-lg' : 'text-xl sm:text-2xl'}`}>Team Builder</h3>
+        {teamActive ? (
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setShowFormationModal(true)} className="flex-1 sm:flex-none text-sm">
+              Change Formation
+            </Button>
+            <Button variant="outline" onClick={clearField} className="flex-1 sm:flex-none text-sm">
+              Clear Players
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={() => setShowFormationModal(true)} className="w-full sm:w-auto text-sm">
+            Build Team
           </Button>
-          <Button variant="outline" onClick={clearField} className="flex-1 sm:flex-none text-sm">
-            Clear Players
-          </Button>
-        </div>
+        )}
       </div>
 
-      {/* Soccer Field */}
+      {!teamActive && (
+        <div className="text-center py-10 bg-gray-800 rounded-lg border border-gray-700 mb-6">
+          <div className="text-4xl mb-2">⚽</div>
+          <p className="text-gray-400 mb-4">Choose a formation and build your lineup</p>
+          <Button onClick={() => setShowFormationModal(true)} className="text-sm">
+            Build Team
+          </Button>
+        </div>
+      )}
+
+      {teamActive && (
       <div 
         className="relative w-full aspect-[3/4] max-w-md mx-auto bg-green-800 rounded-xl border-4 border-white/30 overflow-hidden mb-6"
       >
@@ -262,6 +276,7 @@ export function TeamBuilder() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Formation Selection Modal */}
       <Modal
@@ -333,7 +348,7 @@ export function TeamBuilder() {
         </div>
       </Modal>
 
-      {/* Player selection */}
+      {teamActive && (
       <div>
         <h3 className="text-lg font-bold mb-3 text-white">
           {selectedPlayer 
@@ -373,6 +388,7 @@ export function TeamBuilder() {
           ))}
         </div>
       </div>
+      )}
     </div>
   )
 }

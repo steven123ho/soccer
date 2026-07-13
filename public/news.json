@@ -1,0 +1,37 @@
+[
+  {
+    "id": "1",
+    "date": "2026-07-09",
+    "title": "Build Your Own Custom Cards",
+    "content": "Create new cards. Limit to 1 per day. These are not available to choose in the play section but can be voted on.",
+    "version": "v1.2"
+  },
+  {
+    "id": "2",
+    "date": "2026-07-09",
+    "title": "New Play Feature",
+    "content": "Create teams with randomizer. After games, players can vote on a MOTM. Player with most votes will receive a MOTM card and +10 OVR!",
+    "version": "v1.2"
+  },
+  {
+    "id": "3",
+    "date": "2026-07-08",
+    "title": "New Player Stats | Enhanced Rating",
+    "content": "We've added some new player stats: Vision, Stamina, Touch, Work Rate, and Mindset! When you go to rate a player, your previous stat votes will be shown.",
+    "version": "v1.2"
+  },
+  {
+    "id": "4",
+    "date": "2026-07-08",
+    "title": "New Goals and Assist Tracker",
+    "content": "You can now track your goals and assist for each pickup game. This will show on your player card under performance stats!",
+    "version": "v1.1"
+  },
+  {
+    "id": "5",
+    "date": "2026-07-01",
+    "title": "Initial Release",
+    "content": "Welcome boys to Los N1g@hz Ultimate Team! Track player stats, vote on ratings, and build your dream team.",
+    "version": "v1.0"
+  }
+]

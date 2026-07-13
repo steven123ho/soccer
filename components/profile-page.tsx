@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
-import { Upload, LogOut } from 'lucide-react'
+import { Upload, LogOut, Newspaper } from 'lucide-react'
 import { ImageCropModal } from './image-crop-modal'
 
 export function ProfilePage() {
   const [player, setPlayer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showNews, setShowNews] = useState(false)
+  const [newsItems, setNewsItems] = useState<any[]>([])
+  const [newsLoading, setNewsLoading] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPosition, setEditPosition] = useState('CM')
   const [editSecondaryPositions, setEditSecondaryPositions] = useState<string[]>([])
@@ -66,6 +69,7 @@ export function ProfilePage() {
     { code: 'DE', name: 'Germany' },
     { code: 'GH', name: 'Ghana' },
     { code: 'GR', name: 'Greece' },
+    { code: 'GT', name: 'Guatemala' },
     { code: 'HK', name: 'Hong Kong' },
     { code: 'HU', name: 'Hungary' },
     { code: 'IS', name: 'Iceland' },
@@ -129,6 +133,7 @@ export function ProfilePage() {
     { code: 'GB', name: 'United Kingdom' },
     { code: 'US', name: 'United States' },
     { code: 'UY', name: 'Uruguay' },
+    { code: 'VE', name: 'Venezuela' },
     { code: 'UZ', name: 'Uzbekistan' },
     { code: 'VA', name: 'Vatican City' },
     { code: 'VN', name: 'Vietnam' },
@@ -146,6 +151,25 @@ export function ProfilePage() {
   useEffect(() => {
     fetchProfile()
   }, [])
+
+  useEffect(() => {
+    if (showNews) {
+      fetchNews()
+    }
+  }, [showNews])
+
+  const fetchNews = async () => {
+    setNewsLoading(true)
+    try {
+      const response = await fetch('/news.json')
+      const data = await response.json()
+      setNewsItems(data)
+    } catch (error) {
+      console.error('Error fetching news:', error)
+    } finally {
+      setNewsLoading(false)
+    }
+  }
 
   const fetchProfile = async () => {
     try {
@@ -225,6 +249,11 @@ export function ProfilePage() {
     }
   }
 
+  const getNationalityName = (code: string) => {
+    const country = COUNTRIES.find(c => c.code === code);
+    return country ? country.name : code;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -268,6 +297,53 @@ export function ProfilePage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+  }
+
+  const NewsContent = () => {
+    if (newsLoading) {
+      return (
+        <div className="flex items-center justify-center h-32">
+          <div className="text-gray-400">Loading news...</div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-4">
+          {newsItems.map((item) => (
+            <div key={item.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="text-lg font-bold text-white">{item.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-400">{item.date}</span>
+                    {item.version && (
+                      <>
+                        <span className="text-gray-600">•</span>
+                        <span className="text-xs text-green-400 font-medium">{item.version}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-300 text-sm leading-relaxed">{item.content}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 
+          To add a new news item, edit public/news.json:
+          {
+            "id": "unique-id",
+            "date": "YYYY-MM-DD",
+            "title": "Your Title",
+            "content": "Your content here...",
+            "version": "v1.x" // optional
+          }
+        */}
+      </div>
+    )
   }
 
   if (loading) {
@@ -329,10 +405,23 @@ export function ProfilePage() {
               <label className="text-sm text-gray-400">Jersey Number</label>
               <div className="text-lg font-medium text-white">{player.player_number || 'Not set'}</div>
             </div>
-            <div>
-              <label className="text-sm text-gray-400">Nationality</label>
-              <div className="text-lg font-medium text-white">{player.nationality || 'Not set'}</div>
-            </div>
+              <div>
+                <label className="text-sm text-gray-400">Nationality</label>
+                <div className="flex items-center gap-2 text-lg font-medium text-white">
+                  {player.nationality ? (
+                    <>
+                      <img
+                        src={`https://flagcdn.com/24x18/${player.nationality.toLowerCase()}.png`}
+                        alt={player.nationality}
+                        className="w-5 h-3.5 sm:w-6 sm:h-4 object-cover rounded-sm"
+                      />
+                      <span>{getNationalityName(player.nationality)}</span>
+                    </>
+                  ) : (
+                    'Not set'
+                  )}
+                </div>
+              </div>
             <div>
               <label className="text-sm text-gray-400">Position</label>
               <div className="text-lg font-medium text-white">{player.primary_position}</div>
@@ -350,6 +439,14 @@ export function ProfilePage() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => setShowNews(true)}
+              className="w-full"
+            >
+              <Newspaper size={16} className="mr-2" />
+              News & Updates
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleSignOut}
               className="w-full"
             >
@@ -359,6 +456,10 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <Modal isOpen={showNews} onClose={() => setShowNews(false)} title="News & Updates">
+        <NewsContent />
+      </Modal>
 
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Profile">
         <form onSubmit={handleSave} className="space-y-4">
